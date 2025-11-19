@@ -45,6 +45,70 @@
     - Backup ID
   - ارسال مستقیم به چت تلگرام/گروه مورد نظر شما
 
+### نمونه مقادیر Timezone (IANA)
+
+<details>
+<summary><b>نمایش لیست رایج‌ترین timezone ها</b></summary>
+
+برای وارد کردن مقدار timezone در مرحله تنظیمات NovaBackuper می‌توانید از این مثال‌ها استفاده کنید.
+
+#### خاورمیانه
+
+- **ایران** – `Asia/Tehran`
+- **ترکیه** – `Europe/Istanbul`
+- **عربستان سعودی** – `Asia/Riyadh`
+- **امارات** – `Asia/Dubai`
+- **قطر** – `Asia/Qatar`
+- **عراق** – `Asia/Baghdad`
+- **اسرائیل** – `Asia/Jerusalem`
+
+#### اروپا
+
+- **انگلستان** – `Europe/London`
+- **آلمان** – `Europe/Berlin`
+- **فرانسه** – `Europe/Paris`
+- **ایتالیا** – `Europe/Rome`
+- **اسپانیا** – `Europe/Madrid`
+- **هلند** – `Europe/Amsterdam`
+- **سوئد** – `Europe/Stockholm`
+- **نروژ** – `Europe/Oslo`
+- **روسیه (مسکو)** – `Europe/Moscow`
+
+#### قاره آمریکا
+
+- **آمریکا (شرق)** – `America/New_York`
+- **آمریکا (مرکز)** – `America/Chicago`
+- **آمریکا (کوهستانی)** – `America/Denver`
+- **آمریکا (غرب)** – `America/Los_Angeles`
+- **کانادا (شرق)** – `America/Toronto`
+- **کانادا (غرب)** – `America/Vancouver`
+- **برزیل** – `America/Sao_Paulo`
+- **آرژانتین** – `America/Argentina/Buenos_Aires`
+- **مکزیک** – `America/Mexico_City`
+
+#### آسیا و اقیانوسیه
+
+- **هند** – `Asia/Kolkata`
+- **پاکستان** – `Asia/Karachi`
+- **چین (mainland)** – `Asia/Shanghai`
+- **هنگ‌کنگ** – `Asia/Hong_Kong`
+- **ژاپن** – `Asia/Tokyo`
+- **کره جنوبی** – `Asia/Seoul`
+- **سنگاپور** – `Asia/Singapore`
+- **اندونزی (جاکارتا)** – `Asia/Jakarta`
+- **استرالیا (شرق)** – `Australia/Sydney`
+- **استرالیا (غرب)** – `Australia/Perth`
+- **نیوزلند** – `Pacific/Auckland`
+
+#### آفریقا
+
+- **مصر** – `Africa/Cairo`
+- **آفریقای جنوبی** – `Africa/Johannesburg`
+- **نیجریه** – `Africa/Lagos`
+- **کنیا** – `Africa/Nairobi`
+
+</details>
+
 - **پشتیبانی از چند توزیع لینوکس**
   - تشخیص خودکار پکیج منیجر (`apt`, `dnf`, `yum`, `pacman`)
   - نصب اتوماتیک ابزارهای مورد نیاز (`curl`, `zip`, `cron` و …)

@@ -45,7 +45,72 @@ It generates compressed, timestamped backups of your x-ui database and ships the
     - Backup ID
   - Sent directly to your chosen Telegram chat
 
+### Timezone examples
+
+<details>
+<summary><b>Click to show common timezone values (IANA names)</b></summary>
+
+These are example timezone strings you can use when NovaBackuper asks for your timezone.
+
+#### Middle East
+
+- **Iran** – `Asia/Tehran`
+- **Turkey** – `Europe/Istanbul`
+- **Saudi Arabia** – `Asia/Riyadh`
+- **United Arab Emirates** – `Asia/Dubai`
+- **Qatar** – `Asia/Qatar`
+- **Iraq** – `Asia/Baghdad`
+- **Israel** – `Asia/Jerusalem`
+
+#### Europe
+
+- **United Kingdom** – `Europe/London`
+- **Germany** – `Europe/Berlin`
+- **France** – `Europe/Paris`
+- **Italy** – `Europe/Rome`
+- **Spain** – `Europe/Madrid`
+- **Netherlands** – `Europe/Amsterdam`
+- **Sweden** – `Europe/Stockholm`
+- **Norway** – `Europe/Oslo`
+- **Russia (Moscow)** – `Europe/Moscow`
+
+#### Americas
+
+- **United States (East)** – `America/New_York`
+- **United States (Central)** – `America/Chicago`
+- **United States (Mountain)** – `America/Denver`
+- **United States (West)** – `America/Los_Angeles`
+- **Canada (East)** – `America/Toronto`
+- **Canada (West)** – `America/Vancouver`
+- **Brazil** – `America/Sao_Paulo`
+- **Argentina** – `America/Argentina/Buenos_Aires`
+- **Mexico** – `America/Mexico_City`
+
+#### Asia & Pacific
+
+- **India** – `Asia/Kolkata`
+- **Pakistan** – `Asia/Karachi`
+- **China (mainland)** – `Asia/Shanghai`
+- **Hong Kong** – `Asia/Hong_Kong`
+- **Japan** – `Asia/Tokyo`
+- **South Korea** – `Asia/Seoul`
+- **Singapore** – `Asia/Singapore`
+- **Indonesia (Jakarta)** – `Asia/Jakarta`
+- **Australia (East)** – `Australia/Sydney`
+- **Australia (West)** – `Australia/Perth`
+- **New Zealand** – `Pacific/Auckland`
+
+#### Africa
+
+- **Egypt** – `Africa/Cairo`
+- **South Africa** – `Africa/Johannesburg`
+- **Nigeria** – `Africa/Lagos`
+- **Kenya** – `Africa/Nairobi`
+
+</details>
+
 - **Cross-distro support**
+
   - Detects package manager (`apt`, `dnf`, `yum`, `pacman`)
   - Installs required tools automatically (`curl`, `zip`, `cron`, etc.)
 
