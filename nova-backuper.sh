@@ -121,9 +121,11 @@ menu() {
     print "======== ${PROJECT_NAME} Menu [${VERSION}] ========"
     print ""
     print "1) Install NovaBackuper for x-ui"
-    print "2) Remove all NovaBackuper scripts"
-    print "3) Run all NovaBackuper backup scripts"
-    print "4) Exit"
+    print "2) Edit existing backup"
+    print "3) Update NovaBackuper"
+    print "4) Remove all NovaBackuper scripts"
+    print "5) Run all NovaBackuper backup scripts"
+    print "6) Exit"
     print ""
     input "Choose an option:" choice
 
@@ -132,12 +134,18 @@ menu() {
         start_backup
         ;;
       2)
-        cleanup_backups
+        edit_backup
         ;;
       3)
-        run_all_backup_scripts
+        update_novabackuper
         ;;
       4)
+        cleanup_backups
+        ;;
+      5)
+        run_all_backup_scripts
+        ;;
+      6)
         print "Thank you for using ${PROJECT_NAME} by ${OWNER}. Goodbye!"
         exit 0
         ;;
@@ -168,6 +176,104 @@ run_all_backup_scripts() {
   else
     warn "No backup scripts found in /root directory"
   fi
+  confirm
+}
+
+edit_backup() {
+  clear
+  print "[EDIT EXISTING BACKUP]\n"
+
+  local scripts=()
+  local path
+
+  for path in /root/_*"${SCRIPT_SUFFIX}"; do
+    [[ -f "$path" ]] || continue
+    scripts+=("$path")
+  done
+
+  if (( ${#scripts[@]} == 0 )); then
+    warn "No existing ${PROJECT_NAME} scripts found in /root."
+    confirm
+    return
+  fi
+
+  print "Available backup scripts:\n"
+  local idx
+  for idx in "${!scripts[@]}"; do
+    local base remark
+    base=$(basename "${scripts[$idx]}")
+    remark=${base#_}
+    remark=${remark%"$SCRIPT_SUFFIX"}
+    printf "  %d) %s (remark: %s)\n" "$((idx + 1))" "$base" "$remark"
+  done
+
+  echo
+  local choice
+  while true; do
+    input "Select a script to edit (1-${#scripts[@]}): " choice
+    if ! [[ "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > ${#scripts[@]} )); then
+      wrong "Invalid selection."
+    else
+      break
+    fi
+  done
+
+  local selected base
+  selected="${scripts[$((choice - 1))]}"
+  base=$(basename "$selected")
+
+  REMARK=${base#_}
+  REMARK=${REMARK%"$SCRIPT_SUFFIX"}
+
+  success "Selected backup remark: ${REMARK}"
+
+  # Remove old cron entry for this script
+  crontab -l 2>/dev/null | grep -v "$selected" | crontab - || true
+
+  # Remove old script file
+  rm -f "$selected"
+  success "Previous script and cron entry removed. Reconfiguring..."
+
+  # Run wizard again for the same remark
+  generate_timer
+  check_xui
+  telegram_progress
+  generate_script
+}
+
+update_novabackuper() {
+  clear
+  print "[UPDATE]\n"
+
+  # Try to resolve current script path safely
+  local SCRIPT_PATH
+  SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]:-$0}" 2>/dev/null || echo "")"
+
+  # If path is not usable or looks like system bash, don't overwrite it
+  if [[ -z "$SCRIPT_PATH" || ! -w "$SCRIPT_PATH" || "$SCRIPT_PATH" == "/bin/bash" || "$SCRIPT_PATH" == "/usr/bin/bash" ]]; then
+    warn "NovaBackuper is currently running via one-liner (curl | bash) or from a non-writable path."
+    print "To update, simply re-run the install command from the README:"
+    print ""
+    print "  sudo bash -c \"\$(curl -sL https://github.com/power0matin/NovaBackuper/raw/master/nova-backuper.sh)\""
+    confirm
+    return
+  fi
+
+  print "Updating ${PROJECT_NAME} from GitHub..."
+  local url="https://github.com/power0matin/NovaBackuper/raw/master/nova-backuper.sh"
+
+  if curl -fsSL "$url" -o "${SCRIPT_PATH}.tmp"; then
+    mv "${SCRIPT_PATH}.tmp" "$SCRIPT_PATH"
+    chmod +x "$SCRIPT_PATH"
+    success "NovaBackuper updated successfully."
+    print ""
+    print "Re-run the script to use the new version:"
+    print "  sudo bash ${SCRIPT_PATH}"
+  else
+    wrong "Failed to download latest script. Please check your network or GitHub access."
+    rm -f "${SCRIPT_PATH}.tmp" 2>/dev/null || true
+  fi
+
   confirm
 }
 
