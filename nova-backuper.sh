@@ -306,6 +306,27 @@ telegram_progress() {
       fi
     done
 
+    # ✅ Ask for timezone (IANA, e.g. Asia/Tehran)
+    local default_tz="UTC"
+    if command -v timedatectl >/dev/null 2>&1; then
+      default_tz=$(timedatectl show -p Timezone --value 2>/dev/null || echo "UTC")
+    fi
+
+    while true; do
+      input "Enter your timezone (e.g. Asia/Tehran for Tehran) [default: ${default_tz}]: " USER_TZ
+      if [[ -z "$USER_TZ" ]]; then
+        USER_TZ="$default_tz"
+        break
+      elif TZ="$USER_TZ" date >/dev/null 2>&1; then
+        break
+      else
+        wrong "Invalid timezone. Example: Asia/Tehran, Europe/Berlin, America/New_York"
+      fi
+    done
+
+    TIMEZONE="$USER_TZ"
+    success "Using timezone: $TIMEZONE"
+
     # Validate bot token and chat ID
     log "Checking Telegram bot..."
     local response
@@ -338,6 +359,7 @@ telegram_progress() {
   sleep 1
 }
 
+
 #######################################
 #           Script generator          #
 #######################################
@@ -362,16 +384,17 @@ backup_name="/root/\${timestamp}_${REMARK}${BACKUP_SUFFIX}"
 base_name="/root/\${timestamp}_${REMARK}${TAG}"
 
 XUI_DB_DIR="${XUI_DB_FOLDER_GLOBAL}"
+TIMEZONE="${TIMEZONE}"
 
 log()   { echo "[\$(date '+%Y-%m-%d %H:%M:%S')] \$*"; }
 
 # Build caption dynamically at runtime
-CAPTION=\$(cat <<EOF
+CAPTION=$(cat <<EOF
 <b>🛡 ${PROJECT_NAME} Report</b>
 
-🗓 <b>Date:</b> \$(date '+%Y-%m-%d (%A)')
-⏰ <b>Time:</b> \$(date '+%H:%M:%S %:z')
-🌍 <b>Timezone:</b> \$(date +%Z)
+🗓 <b>Date:</b> \$(TZ="\$TIMEZONE" date '+%Y-%m-%d (%A)')
+⏰ <b>Time:</b> \$(TZ="\$TIMEZONE" date '+%H:%M:%S %:z')
+🌍 <b>Timezone:</b> \$TIMEZONE
 
 💻 <b>Server IP:</b> <code>\${ip}</code>
 🧩 <b>Hostname:</b> <code>\$(hostname)</code>
