@@ -390,19 +390,12 @@ log()   { echo "[\$(date '+%Y-%m-%d %H:%M:%S')] \$*"; }
 
 # Build caption dynamically at runtime
 CAPTION=$(cat <<EOF
-<b>🛡 ${PROJECT_NAME} Report</b>
+<b>🛡 ${PROJECT_NAME}</b>
 
-🗓 <b>Date:</b> \$(TZ="\$TIMEZONE" date '+%Y-%m-%d (%A)')
-⏰ <b>Time:</b> \$(TZ="\$TIMEZONE" date '+%H:%M:%S %:z')
-🌍 <b>Timezone:</b> \$TIMEZONE
-
-💻 <b>Server IP:</b> <code>\${ip}</code>
-🧩 <b>Hostname:</b> <code>\$(hostname)</code>
-
+🕒 <b>Time:</b> \$(TZ="\$TIMEZONE" date '+%Y-%m-%d %H:%M:%S %:z') (<code>\$TIMEZONE</code>)
+🖥 <b>Host:</b> <code>\$(hostname)</code> [<code>\${ip}</code>]
 📦 <b>Backup ID:</b> <code>\${timestamp}_${REMARK}</code>
-📚 <b>Includes:</b> x-ui database (x-ui.db / x-ui.db-wal / x-ui.db-shm)
-
-⚙️ <b>Mode:</b> Automated x-ui backup via Telegram
+📚 <b>Scope:</b> x-ui database (x-ui.db / x-ui.db-wal / x-ui.db-shm)
 EOF
 )
 
