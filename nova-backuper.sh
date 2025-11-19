@@ -245,36 +245,23 @@ update_novabackuper() {
   clear
   print "[UPDATE]\n"
 
-  # Try to resolve current script path safely
-  local SCRIPT_PATH
-  SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]:-$0}" 2>/dev/null || echo "")"
-
-  # If path is not usable or looks like system bash, don't overwrite it
-  if [[ -z "$SCRIPT_PATH" || ! -w "$SCRIPT_PATH" || "$SCRIPT_PATH" == "/bin/bash" || "$SCRIPT_PATH" == "/usr/bin/bash" ]]; then
-    warn "NovaBackuper is currently running via one-liner (curl | bash) or from a non-writable path."
-    print "To update, simply re-run the install command from the README:"
-    print ""
-    print "  sudo bash -c \"\$(curl -sL https://github.com/power0matin/NovaBackuper/raw/master/nova-backuper.sh)\""
-    confirm
-    return
-  fi
-
-  print "Updating ${PROJECT_NAME} from GitHub..."
   local url="https://github.com/power0matin/NovaBackuper/raw/master/nova-backuper.sh"
+  local target="/root/nova-backuper.sh"
 
-  if curl -fsSL "$url" -o "${SCRIPT_PATH}.tmp"; then
-    mv "${SCRIPT_PATH}.tmp" "$SCRIPT_PATH"
-    chmod +x "$SCRIPT_PATH"
-    success "NovaBackuper updated successfully."
+  print "Downloading latest ${PROJECT_NAME}..."
+  if curl -fsSL "$url" -o "${target}.tmp"; then
+    mv "${target}.tmp" "$target"
+    chmod +x "$target"
+    success "NovaBackuper updated at: $target"
     print ""
-    print "Re-run the script to use the new version:"
-    print "  sudo bash ${SCRIPT_PATH}"
+    print "Restarting with the new version..."
+    sleep 1
+    exec bash "$target"
   else
     wrong "Failed to download latest script. Please check your network or GitHub access."
-    rm -f "${SCRIPT_PATH}.tmp" 2>/dev/null || true
+    rm -f "${target}.tmp" 2>/dev/null || true
+    confirm
   fi
-
-  confirm
 }
 
 #######################################
@@ -495,7 +482,7 @@ TIMEZONE="${TIMEZONE}"
 log()   { echo "[\$(date '+%Y-%m-%d %H:%M:%S')] \$*"; }
 
 # Build caption dynamically at runtime
-CAPTION=$(cat <<EOF
+CAPTION=\$(cat <<EOF
 <b>🛡 ${PROJECT_NAME}</b>
 
 🕒 <b>Time:</b> \$(TZ="\$TIMEZONE" date '+%Y-%m-%d %H:%M:%S %:z') (<code>\$TIMEZONE</code>)
