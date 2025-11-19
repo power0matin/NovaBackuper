@@ -25,14 +25,21 @@
 - **تمرکز روی x-ui**  
   بکاپ‌گیری از فایل‌های اصلی دیتابیس x-ui:
 
-  - <span dir="ltr">`/etc/x-ui/x-ui.db`</span>  
-  - <span dir="ltr">`/etc/x-ui/x-ui.db-wal`</span>  
-  - <span dir="ltr">`/etc/x-ui/x-ui.db-shm`</span>
+  <ul dir="ltr">
+    <li><code>/etc/x-ui/x-ui.db</code></li>
+    <li><code>/etc/x-ui/x-ui.db-wal</code></li>
+    <li><code>/etc/x-ui/x-ui.db-shm</code></li>
+  </ul>
 
 - **زمان‌بندی خودکار**
 
-  - ساخت اسکریپت اختصاصی بکاپ در مسیر  
-    <span dir="ltr">`/root/_<remark>_backuper_script.sh`</span>
+  - ساخت اسکریپت اختصاصی بکاپ در مسیر زیر:
+    <div dir="ltr" align="left">
+
+    `/root/_<remark>_backuper_script.sh`
+
+    </div>
+
   - تنظیم خودکار **cron job** بر اساس بازه زمانی‌ای که انتخاب می‌کنید
 
 - **مدیریت امن فایل‌ها**
@@ -59,48 +66,48 @@
 
 <div dir="ltr" align="left">
 
-| Region           | Country / City              | Timezone (IANA)                  |
-| ---------------- | -------------------------- | -------------------------------- |
-| Middle East      | Iran                       | `Asia/Tehran`                    |
-| Middle East      | Türkiye                    | `Europe/Istanbul`                |
-| Middle East      | Saudi Arabia               | `Asia/Riyadh`                    |
-| Middle East      | United Arab Emirates       | `Asia/Dubai`                     |
-| Middle East      | Qatar                      | `Asia/Qatar`                     |
-| Middle East      | Iraq                       | `Asia/Baghdad`                   |
-| Middle East      | Israel                     | `Asia/Jerusalem`                 |
-| Europe           | United Kingdom (London)    | `Europe/London`                  |
-| Europe           | Germany (Berlin)           | `Europe/Berlin`                  |
-| Europe           | France (Paris)             | `Europe/Paris`                   |
-| Europe           | Italy (Rome)               | `Europe/Rome`                    |
-| Europe           | Spain (Madrid)             | `Europe/Madrid`                  |
-| Europe           | Netherlands (Amsterdam)    | `Europe/Amsterdam`               |
-| Europe           | Sweden (Stockholm)         | `Europe/Stockholm`               |
-| Europe           | Norway (Oslo)              | `Europe/Oslo`                    |
-| Europe           | Russia (Moscow)            | `Europe/Moscow`                  |
-| Americas         | USA – East (New York)      | `America/New_York`               |
-| Americas         | USA – Central (Chicago)    | `America/Chicago`                |
-| Americas         | USA – Mountain (Denver)    | `America/Denver`                 |
-| Americas         | USA – West (Los Angeles)   | `America/Los_Angeles`            |
-| Americas         | Canada – East (Toronto)    | `America/Toronto`                |
-| Americas         | Canada – West (Vancouver)  | `America/Vancouver`              |
-| Americas         | Brazil (São Paulo)         | `America/Sao_Paulo`              |
-| Americas         | Argentina (Buenos Aires)   | `America/Argentina/Buenos_Aires` |
-| Americas         | Mexico (Mexico City)       | `America/Mexico_City`            |
-| Asia-Pacific     | India (Kolkata)            | `Asia/Kolkata`                   |
-| Asia-Pacific     | Pakistan (Karachi)         | `Asia/Karachi`                   |
-| Asia-Pacific     | China (Shanghai)           | `Asia/Shanghai`                  |
-| Asia-Pacific     | Hong Kong                  | `Asia/Hong_Kong`                 |
-| Asia-Pacific     | Japan (Tokyo)              | `Asia/Tokyo`                     |
-| Asia-Pacific     | South Korea (Seoul)        | `Asia/Seoul`                     |
-| Asia-Pacific     | Singapore                  | `Asia/Singapore`                 |
-| Asia-Pacific     | Indonesia (Jakarta)        | `Asia/Jakarta`                   |
-| Asia-Pacific     | Australia (Sydney)         | `Australia/Sydney`               |
-| Asia-Pacific     | Australia (Perth)          | `Australia/Perth`                |
-| Asia-Pacific     | New Zealand (Auckland)     | `Pacific/Auckland`               |
-| Africa           | Egypt (Cairo)              | `Africa/Cairo`                   |
-| Africa           | South Africa (Johannesburg)| `Africa/Johannesburg`           |
-| Africa           | Nigeria (Lagos)            | `Africa/Lagos`                   |
-| Africa           | Kenya (Nairobi)            | `Africa/Nairobi`                 |
+| Region       | Country / City              | Timezone (IANA)                  |
+| ------------ | --------------------------- | -------------------------------- |
+| Middle East  | Iran                        | `Asia/Tehran`                    |
+| Middle East  | Türkiye                     | `Europe/Istanbul`                |
+| Middle East  | Saudi Arabia                | `Asia/Riyadh`                    |
+| Middle East  | United Arab Emirates        | `Asia/Dubai`                     |
+| Middle East  | Qatar                       | `Asia/Qatar`                     |
+| Middle East  | Iraq                        | `Asia/Baghdad`                   |
+| Middle East  | Israel                      | `Asia/Jerusalem`                 |
+| Europe       | United Kingdom (London)     | `Europe/London`                  |
+| Europe       | Germany (Berlin)            | `Europe/Berlin`                  |
+| Europe       | France (Paris)              | `Europe/Paris`                   |
+| Europe       | Italy (Rome)                | `Europe/Rome`                    |
+| Europe       | Spain (Madrid)              | `Europe/Madrid`                  |
+| Europe       | Netherlands (Amsterdam)     | `Europe/Amsterdam`               |
+| Europe       | Sweden (Stockholm)          | `Europe/Stockholm`               |
+| Europe       | Norway (Oslo)               | `Europe/Oslo`                    |
+| Europe       | Russia (Moscow)             | `Europe/Moscow`                  |
+| Americas     | USA – East (New York)       | `America/New_York`               |
+| Americas     | USA – Central (Chicago)     | `America/Chicago`                |
+| Americas     | USA – Mountain (Denver)     | `America/Denver`                 |
+| Americas     | USA – West (Los Angeles)    | `America/Los_Angeles`            |
+| Americas     | Canada – East (Toronto)     | `America/Toronto`                |
+| Americas     | Canada – West (Vancouver)   | `America/Vancouver`              |
+| Americas     | Brazil (São Paulo)          | `America/Sao_Paulo`              |
+| Americas     | Argentina (Buenos Aires)    | `America/Argentina/Buenos_Aires` |
+| Americas     | Mexico (Mexico City)        | `America/Mexico_City`            |
+| Asia-Pacific | India (Kolkata)             | `Asia/Kolkata`                   |
+| Asia-Pacific | Pakistan (Karachi)          | `Asia/Karachi`                   |
+| Asia-Pacific | China (Shanghai)            | `Asia/Shanghai`                  |
+| Asia-Pacific | Hong Kong                   | `Asia/Hong_Kong`                 |
+| Asia-Pacific | Japan (Tokyo)               | `Asia/Tokyo`                     |
+| Asia-Pacific | South Korea (Seoul)         | `Asia/Seoul`                     |
+| Asia-Pacific | Singapore                   | `Asia/Singapore`                 |
+| Asia-Pacific | Indonesia (Jakarta)         | `Asia/Jakarta`                   |
+| Asia-Pacific | Australia (Sydney)          | `Australia/Sydney`               |
+| Asia-Pacific | Australia (Perth)           | `Australia/Perth`                |
+| Asia-Pacific | New Zealand (Auckland)      | `Pacific/Auckland`               |
+| Africa       | Egypt (Cairo)               | `Africa/Cairo`                   |
+| Africa       | South Africa (Johannesburg) | `Africa/Johannesburg`            |
+| Africa       | Nigeria (Lagos)             | `Africa/Lagos`                   |
+| Africa       | Kenya (Nairobi)             | `Africa/Nairobi`                 |
 
 </div>
 
@@ -132,7 +139,7 @@ NovaBackuper عمداً مینیمال و تخصصی طراحی شده:
 
 ```bash
 sudo bash -c "$(curl -sL https://github.com/power0matin/NovaBackuper/raw/master/nova-backuper.sh)"
-````
+```
 
 </div>
 
@@ -169,7 +176,7 @@ sudo bash -c "$(curl -sL https://github.com/power0matin/NovaBackuper/raw/master/
 
 شما می‌توانید:
 
-* برای ویرایش یا حذف کران‌جاب:
+- برای ویرایش یا حذف کران‌جاب:
 
   <div dir="ltr" align="left">
 
@@ -179,7 +186,7 @@ sudo bash -c "$(curl -sL https://github.com/power0matin/NovaBackuper/raw/master/
 
   </div>
 
-* برای اجرای دستی بکاپ:
+- برای اجرای دستی بکاپ:
 
   <div dir="ltr" align="left">
 
