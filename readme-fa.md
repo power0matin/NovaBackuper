@@ -52,60 +52,48 @@
 
 برای وارد کردن مقدار timezone در مرحله تنظیمات NovaBackuper می‌توانید از این مثال‌ها استفاده کنید.
 
-#### خاورمیانه
-
-- **ایران** – `Asia/Tehran`
-- **ترکیه** – `Europe/Istanbul`
-- **عربستان سعودی** – `Asia/Riyadh`
-- **امارات** – `Asia/Dubai`
-- **قطر** – `Asia/Qatar`
-- **عراق** – `Asia/Baghdad`
-- **اسرائیل** – `Asia/Jerusalem`
-
-#### اروپا
-
-- **انگلستان** – `Europe/London`
-- **آلمان** – `Europe/Berlin`
-- **فرانسه** – `Europe/Paris`
-- **ایتالیا** – `Europe/Rome`
-- **اسپانیا** – `Europe/Madrid`
-- **هلند** – `Europe/Amsterdam`
-- **سوئد** – `Europe/Stockholm`
-- **نروژ** – `Europe/Oslo`
-- **روسیه (مسکو)** – `Europe/Moscow`
-
-#### قاره آمریکا
-
-- **آمریکا (شرق)** – `America/New_York`
-- **آمریکا (مرکز)** – `America/Chicago`
-- **آمریکا (کوهستانی)** – `America/Denver`
-- **آمریکا (غرب)** – `America/Los_Angeles`
-- **کانادا (شرق)** – `America/Toronto`
-- **کانادا (غرب)** – `America/Vancouver`
-- **برزیل** – `America/Sao_Paulo`
-- **آرژانتین** – `America/Argentina/Buenos_Aires`
-- **مکزیک** – `America/Mexico_City`
-
-#### آسیا و اقیانوسیه
-
-- **هند** – `Asia/Kolkata`
-- **پاکستان** – `Asia/Karachi`
-- **چین (mainland)** – `Asia/Shanghai`
-- **هنگ‌کنگ** – `Asia/Hong_Kong`
-- **ژاپن** – `Asia/Tokyo`
-- **کره جنوبی** – `Asia/Seoul`
-- **سنگاپور** – `Asia/Singapore`
-- **اندونزی (جاکارتا)** – `Asia/Jakarta`
-- **استرالیا (شرق)** – `Australia/Sydney`
-- **استرالیا (غرب)** – `Australia/Perth`
-- **نیوزلند** – `Pacific/Auckland`
-
-#### آفریقا
-
-- **مصر** – `Africa/Cairo`
-- **آفریقای جنوبی** – `Africa/Johannesburg`
-- **نیجریه** – `Africa/Lagos`
-- **کنیا** – `Africa/Nairobi`
+| منطقه            | کشور / شهر                 | Timezone (IANA)                  |
+| ---------------- | -------------------------- | -------------------------------- |
+| خاورمیانه        | ایران                      | `Asia/Tehran`                    |
+| خاورمیانه        | ترکیه                      | `Europe/Istanbul`                |
+| خاورمیانه        | عربستان سعودی              | `Asia/Riyadh`                    |
+| خاورمیانه        | امارات                     | `Asia/Dubai`                     |
+| خاورمیانه        | قطر                        | `Asia/Qatar`                     |
+| خاورمیانه        | عراق                       | `Asia/Baghdad`                   |
+| خاورمیانه        | اسرائیل                    | `Asia/Jerusalem`                 |
+| اروپا            | انگلستان (لندن)            | `Europe/London`                  |
+| اروپا            | آلمان (برلین)              | `Europe/Berlin`                  |
+| اروپا            | فرانسه (پاریس)             | `Europe/Paris`                   |
+| اروپا            | ایتالیا (رم)               | `Europe/Rome`                    |
+| اروپا            | اسپانیا (مادرید)           | `Europe/Madrid`                  |
+| اروپا            | هلند (آمستردام)            | `Europe/Amsterdam`               |
+| اروپا            | سوئد (استکهلم)             | `Europe/Stockholm`               |
+| اروپا            | نروژ (اسلو)                | `Europe/Oslo`                    |
+| اروپا            | روسیه (مسکو)               | `Europe/Moscow`                  |
+| قاره آمریکا      | آمریکا – شرق (نیویورک)     | `America/New_York`               |
+| قاره آمریکا      | آمریکا – مرکز (شیکاگو)     | `America/Chicago`                |
+| قاره آمریکا      | آمریکا – کوهستانی (دنور)   | `America/Denver`                 |
+| قاره آمریکا      | آمریکا – غرب (لس‌آنجلس)    | `America/Los_Angeles`            |
+| قاره آمریکا      | کانادا – شرق (تورنتو)      | `America/Toronto`                |
+| قاره آمریکا      | کانادا – غرب (ونکوور)      | `America/Vancouver`              |
+| قاره آمریکا      | برزیل ( سائوپائولو )       | `America/Sao_Paulo`              |
+| قاره آمریکا      | آرژانتین (بوینس‌آیرس)      | `America/Argentina/Buenos_Aires` |
+| قاره آمریکا      | مکزیک (مکزیکوسیتی)         | `America/Mexico_City`            |
+| آسیا و اقیانوسیه | هند (کلکته)                | `Asia/Kolkata`                   |
+| آسیا و اقیانوسیه | پاکستان (کراچی)            | `Asia/Karachi`                   |
+| آسیا و اقیانوسیه | چین (شانگهای)              | `Asia/Shanghai`                  |
+| آسیا و اقیانوسیه | هنگ‌کنگ                    | `Asia/Hong_Kong`                 |
+| آسیا و اقیانوسیه | ژاپن (توکیو)               | `Asia/Tokyo`                     |
+| آسیا و اقیانوسیه | کره جنوبی (سئول)           | `Asia/Seoul`                     |
+| آسیا و اقیانوسیه | سنگاپور                    | `Asia/Singapore`                 |
+| آسیا و اقیانوسیه | اندونزی (جاکارتا)          | `Asia/Jakarta`                   |
+| آسیا و اقیانوسیه | استرالیا (سیدنی)           | `Australia/Sydney`               |
+| آسیا و اقیانوسیه | استرالیا (پرت)             | `Australia/Perth`                |
+| آسیا و اقیانوسیه | نیوزلند (آوکلند)           | `Pacific/Auckland`               |
+| آفریقا           | مصر (قاهره)                | `Africa/Cairo`                   |
+| آفریقا           | آفریقای جنوبی (ژوهانسبورگ) | `Africa/Johannesburg`            |
+| آفریقا           | نیجریه (لاگوس)             | `Africa/Lagos`                   |
+| آفریقا           | کنیا (نایروبی)             | `Africa/Nairobi`                 |
 
 </details>
 

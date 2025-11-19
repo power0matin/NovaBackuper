@@ -52,65 +52,52 @@ It generates compressed, timestamped backups of your x-ui database and ships the
 
 These are example timezone strings you can use when NovaBackuper asks for your timezone.
 
-#### Middle East
-
-- **Iran** – `Asia/Tehran`
-- **Turkey** – `Europe/Istanbul`
-- **Saudi Arabia** – `Asia/Riyadh`
-- **United Arab Emirates** – `Asia/Dubai`
-- **Qatar** – `Asia/Qatar`
-- **Iraq** – `Asia/Baghdad`
-- **Israel** – `Asia/Jerusalem`
-
-#### Europe
-
-- **United Kingdom** – `Europe/London`
-- **Germany** – `Europe/Berlin`
-- **France** – `Europe/Paris`
-- **Italy** – `Europe/Rome`
-- **Spain** – `Europe/Madrid`
-- **Netherlands** – `Europe/Amsterdam`
-- **Sweden** – `Europe/Stockholm`
-- **Norway** – `Europe/Oslo`
-- **Russia (Moscow)** – `Europe/Moscow`
-
-#### Americas
-
-- **United States (East)** – `America/New_York`
-- **United States (Central)** – `America/Chicago`
-- **United States (Mountain)** – `America/Denver`
-- **United States (West)** – `America/Los_Angeles`
-- **Canada (East)** – `America/Toronto`
-- **Canada (West)** – `America/Vancouver`
-- **Brazil** – `America/Sao_Paulo`
-- **Argentina** – `America/Argentina/Buenos_Aires`
-- **Mexico** – `America/Mexico_City`
-
-#### Asia & Pacific
-
-- **India** – `Asia/Kolkata`
-- **Pakistan** – `Asia/Karachi`
-- **China (mainland)** – `Asia/Shanghai`
-- **Hong Kong** – `Asia/Hong_Kong`
-- **Japan** – `Asia/Tokyo`
-- **South Korea** – `Asia/Seoul`
-- **Singapore** – `Asia/Singapore`
-- **Indonesia (Jakarta)** – `Asia/Jakarta`
-- **Australia (East)** – `Australia/Sydney`
-- **Australia (West)** – `Australia/Perth`
-- **New Zealand** – `Pacific/Auckland`
-
-#### Africa
-
-- **Egypt** – `Africa/Cairo`
-- **South Africa** – `Africa/Johannesburg`
-- **Nigeria** – `Africa/Lagos`
-- **Kenya** – `Africa/Nairobi`
+| Region         | Country / City              | Timezone (IANA)                  |
+| -------------- | --------------------------- | -------------------------------- |
+| Middle East    | Iran                        | `Asia/Tehran`                    |
+| Middle East    | Turkey                      | `Europe/Istanbul`                |
+| Middle East    | Saudi Arabia                | `Asia/Riyadh`                    |
+| Middle East    | United Arab Emirates        | `Asia/Dubai`                     |
+| Middle East    | Qatar                       | `Asia/Qatar`                     |
+| Middle East    | Iraq                        | `Asia/Baghdad`                   |
+| Middle East    | Israel                      | `Asia/Jerusalem`                 |
+| Europe         | United Kingdom (London)     | `Europe/London`                  |
+| Europe         | Germany (Berlin)            | `Europe/Berlin`                  |
+| Europe         | France (Paris)              | `Europe/Paris`                   |
+| Europe         | Italy (Rome)                | `Europe/Rome`                    |
+| Europe         | Spain (Madrid)              | `Europe/Madrid`                  |
+| Europe         | Netherlands (Amsterdam)     | `Europe/Amsterdam`               |
+| Europe         | Sweden (Stockholm)          | `Europe/Stockholm`               |
+| Europe         | Norway (Oslo)               | `Europe/Oslo`                    |
+| Europe         | Russia (Moscow)             | `Europe/Moscow`                  |
+| Americas       | USA – East (New York)       | `America/New_York`               |
+| Americas       | USA – Central (Chicago)     | `America/Chicago`                |
+| Americas       | USA – Mountain (Denver)     | `America/Denver`                 |
+| Americas       | USA – West (Los Angeles)    | `America/Los_Angeles`            |
+| Americas       | Canada – East (Toronto)     | `America/Toronto`                |
+| Americas       | Canada – West (Vancouver)   | `America/Vancouver`              |
+| Americas       | Brazil (São Paulo)          | `America/Sao_Paulo`              |
+| Americas       | Argentina (Buenos Aires)    | `America/Argentina/Buenos_Aires` |
+| Americas       | Mexico (Mexico City)        | `America/Mexico_City`            |
+| Asia & Pacific | India (Kolkata)             | `Asia/Kolkata`                   |
+| Asia & Pacific | Pakistan (Karachi)          | `Asia/Karachi`                   |
+| Asia & Pacific | China (Shanghai)            | `Asia/Shanghai`                  |
+| Asia & Pacific | Hong Kong                   | `Asia/Hong_Kong`                 |
+| Asia & Pacific | Japan (Tokyo)               | `Asia/Tokyo`                     |
+| Asia & Pacific | South Korea (Seoul)         | `Asia/Seoul`                     |
+| Asia & Pacific | Singapore                   | `Asia/Singapore`                 |
+| Asia & Pacific | Indonesia (Jakarta)         | `Asia/Jakarta`                   |
+| Asia & Pacific | Australia (Sydney)          | `Australia/Sydney`               |
+| Asia & Pacific | Australia (Perth)           | `Australia/Perth`                |
+| Asia & Pacific | New Zealand (Auckland)      | `Pacific/Auckland`               |
+| Africa         | Egypt (Cairo)               | `Africa/Cairo`                   |
+| Africa         | South Africa (Johannesburg) | `Africa/Johannesburg`            |
+| Africa         | Nigeria (Lagos)             | `Africa/Lagos`                   |
+| Africa         | Kenya (Nairobi)             | `Africa/Nairobi`                 |
 
 </details>
 
 - **Cross-distro support**
-
   - Detects package manager (`apt`, `dnf`, `yum`, `pacman`)
   - Installs required tools automatically (`curl`, `zip`, `cron`, etc.)
 
