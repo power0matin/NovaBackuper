@@ -383,7 +383,7 @@ CAPTION=\$(cat <<EOF
 EOF
 )
 
-reply_markup='{"inline_keyboard":[[{"text":"📦 GitHub","url":"https://github.com/power0matin"},{"text":"👨‍💻 Developer","url":"https://t.me/powermatin"}]]}'
+reply_markup='{"inline_keyboard":[[{"text":"📦 GitHub","url":"https://github.com/power0matin/NovaBackuper"},{"text":"👨‍💻 Developer","url":"https://github.com/power0matin"}]]}'
 
 # Clean up old backup files (only specific backup files)
 cd /root

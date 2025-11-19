@@ -1,5 +1,5 @@
 <div align="center">  
-  <img src="https://github.com/user-attachments/assets/16cc16e2-f1e5-4ae8-9b5f-bbea33fa39bd" alt="لوگوی NovaBackuper" />  
+  <img src="https://github.com/user-attachments/assets/16cc16e2-f1e5-4ae8-9b5f-bbea33fa39bd" alt=" لوگوی NovaBackuper" />  
 </div>
 
 # NovaBackuper چیه؟
@@ -66,7 +66,7 @@ NovaBackuper عمداً مینیمال و تخصصی طراحی شده:
 برای نصب آخرین نسخه، این دستور رو اجرا کنید:
 
 ```bash
-sudo bash -c "$(curl -sL https://github.com/power0matin/nova-backuper/raw/master/nova-backuper.sh)"
+sudo bash -c "$(curl -sL https://github.com/power0matin/NovaBackuper/raw/master/nova-backuper.sh)"
 ```
 
 این اسکریپت کارهای زیر رو انجام می‌ده:
@@ -113,4 +113,4 @@ sudo bash -c "$(curl -sL https://github.com/power0matin/nova-backuper/raw/master
 
 🔹 توسعه و نگهداری توسط [@power0matin](https://github.com/power0matin)
 
-[![Stargazers over time](https://starchart.cc/power0matin/nova-backuper.svg?variant=adaptive)](https://starchart.cc/power0matin/nova-backuper)
+[![Stargazers over time](https://starchart.cc/power0matin/NovaBackuper.svg?variant=adaptive)](https://starchart.cc/power0matin/NovaBackuper)
