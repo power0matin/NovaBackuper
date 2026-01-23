@@ -44,7 +44,7 @@ success() { echo -e "${COLORS[spring]}${COLORS[green]}[SUCCESS]${COLORS[reset]} 
 input()   { read -p "$(echo -e "${COLORS[orange]}▶ $1${COLORS[reset]} ")" "$2"; }
 confirm() { read -p "$(echo -e "${COLORS[pink]}Press any key to continue...${COLORS[reset]}")"; }
 
-trap 'error "An unexpected error occurred. Exiting..."' ERR
+trap 'error "Unexpected error at line ${LINENO}: ${BASH_COMMAND}"' ERR
 
 #######################################
 #           System utilities          #
@@ -90,12 +90,22 @@ update_os() {
 install_dependencies() {
   local package_manager
   package_manager=$(detect_package_manager)
-  local packages=("wget" "zip" "cron" "curl")
+
+  local cron_pkg=""
+  case "$package_manager" in
+    apt) cron_pkg="cron" ;;
+    dnf|yum) cron_pkg="cronie" ;;
+    pacman) cron_pkg="cronie" ;;
+  esac
+
+  # Minimal, actually-used dependencies
+  local packages=("zip" "curl" "$cron_pkg" "ca-certificates" "tzdata")
 
   log "Installing dependencies: ${packages[*]}..."
 
-  case $package_manager in
+  case "$package_manager" in
     apt)
+      apt-get update -y || error "Failed to update apt cache"
       apt-get install -y "${packages[@]}" || error "Failed to install dependencies"
       ;;
     dnf|yum)
@@ -105,6 +115,7 @@ install_dependencies() {
       pacman -Sy --noconfirm "${packages[@]}" || error "Failed to install dependencies"
       ;;
   esac
+
   success "Dependencies installed successfully"
 }
 
@@ -113,13 +124,13 @@ install_dependencies() {
 #######################################
 
 menu() {
-  update_os
   install_dependencies
 
   while true; do
     clear
     print "======== ${PROJECT_NAME} Menu [${VERSION}] ========"
     print ""
+    print "0) Update OS packages (optional)"
     print "1) Install NovaBackuper for x-ui"
     print "2) Edit existing backup"
     print "3) Update NovaBackuper"
@@ -130,6 +141,10 @@ menu() {
     input "Choose an option:" choice
 
     case $choice in
+      0)
+        update_os
+        confirm
+        ;;
       1)
         start_backup
         ;;
@@ -302,7 +317,7 @@ generate_timer() {
   clear
   print "[TIMER]\n"
   print "Enter a time interval in minutes for sending backups."
-  print "For example, '60' means backups will be sent every 60 minutes.\n"
+  print "We will use a safe cron schedule + an internal interval gate for exact timing.\n"
 
   while true; do
     input "Enter the number of minutes (1-1440): " minutes
@@ -316,21 +331,19 @@ generate_timer() {
     fi
   done
 
-  if [ "$minutes" -le 59 ]; then
-    TIMER="*/$minutes * * * *"
-  elif [ "$minutes" -le 1439 ]; then
-    hours=$((minutes / 60))
-    remaining_minutes=$((minutes % 60))
-    if [ "$remaining_minutes" -eq 0 ]; then
-      TIMER="0 */$hours * * *"
-    else
-      TIMER="*/$remaining_minutes */$hours * * *"
-    fi
+  INTERVAL_MINUTES="$minutes"
+
+  # Cron base frequency (avoid running too often if interval is large)
+  # If interval < 5 => every 1 minute; else every 5 minutes.
+  if [ "$INTERVAL_MINUTES" -lt 5 ]; then
+    CRON_BASE_MINUTES=1
   else
-    TIMER="0 0 * * *"
+    CRON_BASE_MINUTES=5
   fi
 
-  success "Cron job set to run every $minutes minutes: $TIMER"
+  TIMER="*/${CRON_BASE_MINUTES} * * * *"
+  success "Internal interval: every ${INTERVAL_MINUTES} minutes"
+  success "Cron schedule: ${TIMER} (script will self-skip until interval is due)"
   sleep 1
 }
 
@@ -463,7 +476,7 @@ generate_script() {
 
   log "Generating backup script: $BACKUP_PATH"
 
-  cat <<EOL > "$BACKUP_PATH"
+  cat <<'EOL' > "$BACKUP_PATH"
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
@@ -473,13 +486,60 @@ set -Eeuo pipefail
 ip=\$(hostname -I | awk '{print \$1}')
 timestamp=\$(date +%m%d-%H%M)
 
-backup_name="/root/\${timestamp}_${REMARK}${BACKUP_SUFFIX}"
-base_name="/root/\${timestamp}_${REMARK}${TAG}"
+REMARK="__REMARK__"
+PROJECT_NAME="__PROJECT_NAME__"
+VERSION="__VERSION__"
 
-XUI_DB_DIR="${XUI_DB_FOLDER_GLOBAL}"
-TIMEZONE="${TIMEZONE}"
+TAG="__TAG__"
+BACKUP_SUFFIX="__BACKUP_SUFFIX__"
+SPLIT_SIZE="__SPLIT_SIZE__"
+
+XUI_DB_DIR="__XUI_DB_DIR__"
+TIMEZONE="__TIMEZONE__"
+
+TELEGRAM_BOT_TOKEN="__TG_BOT__"
+TELEGRAM_CHAT_ID="__TG_CHAT__"
+TELEGRAM_TOPIC_ID="__TG_TOPIC__"
+
+INTERVAL_MINUTES="__INTERVAL_MINUTES__"
+
+backup_name="/root/${timestamp}_${REMARK}${BACKUP_SUFFIX}"
+base_name="/root/${timestamp}_${REMARK}${TAG}"
+
 
 log()   { echo "[\$(date '+%Y-%m-%d %H:%M:%S')] \$*"; }
+
+STATE_DIR="/var/lib/novabackuper"
+LAST_RUN_FILE="${STATE_DIR}/${REMARK}.last_run"
+LOCK_DIR="${STATE_DIR}/${REMARK}.lockdir"
+
+mkdir -p "$STATE_DIR"
+
+should_run_now() {
+  local now last
+  now=$(date +%s)
+
+  if [ -f "$LAST_RUN_FILE" ]; then
+    last=$(cat "$LAST_RUN_FILE" 2>/dev/null || echo 0)
+    if [[ "$last" =~ ^[0-9]+$ ]]; then
+      if (( now - last < INTERVAL_MINUTES * 60 )); then
+        log "Skip: not due yet (interval ${INTERVAL_MINUTES}m)."
+        return 1
+      fi
+    fi
+  fi
+  return 0
+}
+
+acquire_lock() {
+  # mkdir-based lock (portable)
+  if mkdir "$LOCK_DIR" 2>/dev/null; then
+    trap 'rm -rf "$LOCK_DIR" 2>/dev/null || true' EXIT
+    return 0
+  fi
+  log "Skip: another backup run is in progress."
+  return 1
+}
 
 # Build caption dynamically at runtime
 CAPTION=\$(cat <<EOF
@@ -496,7 +556,11 @@ reply_markup='{"inline_keyboard":[[{"text":"📦 GitHub","url":"https://github.c
 
 # Clean up old backup files (only specific backup files)
 cd /root
-rm -rf *"${REMARK}${TAG}"* 2>/dev/null || true
+shopt -s nullglob
+for old in /root/*_"${REMARK}${TAG}"*; do
+  rm -f -- "$old" 2>/dev/null || true
+done
+shopt -u nullglob
 
 # Ensure x-ui database files exist
 if [ ! -f "\${XUI_DB_DIR}/x-ui.db" ]; then
@@ -518,7 +582,11 @@ if [ "\${#db_files[@]}" -eq 0 ]; then
   exit 1
 fi
 
+acquire_lock || exit 0
+should_run_now || exit 0
+
 log "Creating backup archive: \${backup_name}"
+
 log "Including files:"
 printf '  - %s\n' "\${db_files[@]}"
 
@@ -563,24 +631,48 @@ if ls \${base_name}* > /dev/null 2>&1; then
     fi
   done
   log "All backup parts sent successfully."
+  date +%s > "$LAST_RUN_FILE"
 else
   log "Backup file not found: \$backup_name. Please check the server."
   exit 1
 fi
 
 # Final cleanup
-rm -rf *"${REMARK}${TAG}"* 2>/dev/null || true
+shopt -s nullglob
+for old in /root/*_"${REMARK}${TAG}"*; do
+  rm -f -- "$old" 2>/dev/null || true
+done
+shopt -u nullglob
 EOL
 
+  # Replace placeholders in generated script
+  sed -i \
+    -e "s|__REMARK__|${REMARK}|g" \
+    -e "s|__PROJECT_NAME__|${PROJECT_NAME}|g" \
+    -e "s|__VERSION__|${VERSION}|g" \
+    -e "s|__TAG__|${TAG}|g" \
+    -e "s|__BACKUP_SUFFIX__|${BACKUP_SUFFIX}|g" \
+    -e "s|__SPLIT_SIZE__|${SPLIT_SIZE}|g" \
+    -e "s|__XUI_DB_DIR__|${XUI_DB_FOLDER_GLOBAL}|g" \
+    -e "s|__TIMEZONE__|${TIMEZONE}|g" \
+    -e "s|__TG_BOT__|${TELEGRAM_BOT_TOKEN}|g" \
+    -e "s|__TG_CHAT__|${TELEGRAM_CHAT_ID}|g" \
+    -e "s|__TG_TOPIC__|${TELEGRAM_TOPIC_ID}|g" \
+    -e "s|__INTERVAL_MINUTES__|${INTERVAL_MINUTES}|g" \
+    "$BACKUP_PATH"
+
+
+  log "Running the backup script for the first time..."
+  
   chmod +x "$BACKUP_PATH"
   success "Backup script created: $BACKUP_PATH"
 
-  log "Running the backup script for the first time..."
   if bash "$BACKUP_PATH"; then
     success "First backup created and sent successfully."
 
     log "Setting up cron job..."
-    if (crontab -l 2>/dev/null; echo "$TIMER $BACKUP_PATH") | crontab -; then
+    # Ensure no duplicate cron entry for this script
+    if (crontab -l 2>/dev/null | grep -vF "$BACKUP_PATH" || true; echo "$TIMER $BACKUP_PATH") | crontab -; then
       success "Cron job set up successfully. Backups will run automatically."
     else
       error "Failed to set up cron job. You can set it manually: $TIMER $BACKUP_PATH"
