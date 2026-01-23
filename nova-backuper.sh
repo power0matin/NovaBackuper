@@ -542,15 +542,18 @@ acquire_lock() {
 }
 
 # Build caption dynamically at runtime
-CAPTION=\$(cat <<EOF
+CAPTION="$(cat <<EOF
 <b>🛡 ${PROJECT_NAME}</b>
 
-🕒 <b>Time:</b> \$(TZ="\$TIMEZONE" date '+%Y-%m-%d %H:%M:%S %:z') (<code>\$TIMEZONE</code>)
-🖥 <b>Host:</b> <code>\$(hostname)</code> [<code>\${ip}</code>]
-📦 <b>Backup ID:</b> <code>\${timestamp}_${REMARK}</code>
-📚 <b>Scope:</b> x-ui database (x-ui.db / x-ui.db-wal / x-ui.db-shm)
+🕒 <b>Time:</b> $(TZ="${TIMEZONE}" date '+%Y-%m-%d %H:%M:%S %:z') (<code>${TIMEZONE}</code>)
+🖥 <b>Host:</b> <code>$(hostname)</code> [<code>${ip}</code>]
+📦 <b>Backup ID:</b> <code>${timestamp}_${REMARK}</code>
+📚 <b>Scope:</b> x-ui database (<code>x-ui.db</code> / <code>x-ui.db-wal</code> / <code>x-ui.db-shm</code>)
 EOF
-)
+)"
+
+# Trim leading/trailing empty lines (prevents the "blank first line" issue)
+CAPTION="$(printf '%s' "$CAPTION" | sed -e '1{/^[[:space:]]*$/d;}' -e '${/^[[:space:]]*$/d;}')"
 
 reply_markup='{"inline_keyboard":[[{"text":"📦 GitHub","url":"https://github.com/power0matin/NovaBackuper"},{"text":"👨‍💻 Developer","url":"https://github.com/power0matin"}]]}'
 
