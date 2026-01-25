@@ -184,20 +184,36 @@ cleanup_backups() {
 
 run_all_backup_scripts() {
   local failed=0
+  local skipped=0
+  local succeeded=0
 
   if compgen -G "/root/*${SCRIPT_SUFFIX}" > /dev/null; then
     for script in /root/*${SCRIPT_SUFFIX}; do
       log "Running backup script: $script"
-      if ! bash "$script"; then
-        warn "Backup script failed: $script"
+
+      bash "$script"
+      rc=$?
+
+      if [ "$rc" -eq 0 ]; then
+        succeeded=$((succeeded + 1))
+      elif [ "$rc" -eq 75 ]; then
+        skipped=$((skipped + 1))
+        warn "Skipped (not due yet): $script"
+      else
         failed=$((failed + 1))
+        warn "Backup script failed (exit $rc): $script"
       fi
     done
 
     if [ "$failed" -gt 0 ]; then
-      warn "Finished running scripts with ${failed} failure(s)."
+      warn "Finished: ${succeeded} succeeded, ${skipped} skipped (not due), ${failed} failed."
     else
-      success "All backup scripts ran successfully."
+      if [ "$succeeded" -gt 0 ]; then
+        success "Finished: ${succeeded} succeeded, ${skipped} skipped (not due), ${failed} failed."
+      else
+        warn "Finished: 0 succeeded, ${skipped} skipped (not due), 0 failed."
+        warn "Nothing was sent because all scripts were not due yet."
+      fi
     fi
   else
     warn "No backup scripts found in /root directory"
