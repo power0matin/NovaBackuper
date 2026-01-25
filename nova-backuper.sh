@@ -520,6 +520,7 @@ TELEGRAM_CHAT_ID="__TG_CHAT__"
 TELEGRAM_TOPIC_ID="__TG_TOPIC__"
 
 INTERVAL_MINUTES="__INTERVAL_MINUTES__"
+FORCE_RUN="${FORCE_RUN:-0}"
 
 backup_name="/root/${timestamp}_${REMARK}${BACKUP_SUFFIX}"
 base_name="/root/${timestamp}_${REMARK}${TAG}"
@@ -537,15 +538,21 @@ should_run_now() {
   local now last
   now=$(date +%s)
 
+  if [ "${FORCE_RUN}" = "1" ]; then
+    log "Force run enabled: bypassing interval gate."
+    return 0
+  fi
+
   if [ -f "$LAST_RUN_FILE" ]; then
     last=$(cat "$LAST_RUN_FILE" 2>/dev/null || echo 0)
     if [[ "$last" =~ ^[0-9]+$ ]]; then
       if (( now - last < INTERVAL_MINUTES * 60 )); then
         log "Skip: not due yet (interval ${INTERVAL_MINUTES}m)."
-        return 1
+        return 75   # special code: not due
       fi
     fi
   fi
+
   return 0
 }
 
@@ -604,7 +611,11 @@ fi
 
 
 acquire_lock || exit 0
-should_run_now || exit 0
+
+if ! should_run_now; then
+  rc=$?
+  exit "$rc"
+fi
 
 log "Creating backup archive: ${backup_name}"
 
@@ -702,16 +713,19 @@ EOL
   chmod +x "$BACKUP_PATH"
   success "Backup script created: $BACKUP_PATH"
 
-  if bash "$BACKUP_PATH"; then
+  # Force first run to ensure an initial backup is created and sent immediately
+  if FORCE_RUN=1 bash "$BACKUP_PATH"; then
     success "First backup created and sent successfully."
-
-    log "Setting up cron job..."
-    # Ensure no duplicate cron entry for this script
-    if (crontab -l 2>/dev/null | grep -vF "$BACKUP_PATH" || true; echo "$TIMER $BACKUP_PATH") | crontab -; then
-      success "Cron job set up successfully. Backups will run automatically."
+  else
+    rc=$?
+    if [ "$rc" -eq 75 ]; then
+      warn "First run skipped: not due yet by interval gate. (This should not happen with FORCE_RUN=1.)"
+      warn "You can force a manual run with: FORCE_RUN=1 bash $BACKUP_PATH"
     else
-      error "Failed to set up cron job. You can set it manually: $TIMER $BACKUP_PATH"
+      error "Failed to run backup script (exit $rc). Please check the server."
     fi
+  fi
+
 
     success "🎉 ${PROJECT_NAME} is set up and running!"
     success "Backup script location: $BACKUP_PATH"
