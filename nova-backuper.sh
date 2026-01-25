@@ -588,7 +588,7 @@ fi
 acquire_lock || exit 0
 should_run_now || exit 0
 
-log "Creating backup archive: \${backup_name}"
+log "Creating backup archive: ${backup_name}"
 
 log "Including files:"
 printf '  - %s\n' "${db_files[@]}"
@@ -608,24 +608,32 @@ if [ "${#parts[@]}" -gt 0 ]; then
   for FILE in "${parts[@]}"; do
     log "Sending file: $FILE"
 
+    # Build curl args safely (avoid line-continuation issues)
+    curl_args=(
+      -s
+      -o /tmp/tg_resp.json
+      -w "%{http_code}"
+      -F "chat_id=${TELEGRAM_CHAT_ID}"
+      -F "document=@${FILE}"
+      --form-string "caption=${CAPTION}"
+      -F "parse_mode=HTML"
+      --form-string "reply_markup=${reply_markup}"
+      "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument"
+    )
+
     if [ -n "${TELEGRAM_TOPIC_ID}" ]; then
-      response=$(curl -s -o /tmp/tg_resp.json -w "%{http_code}" \
-        -F "chat_id=${TELEGRAM_CHAT_ID}" \
-        -F "message_thread_id=${TELEGRAM_TOPIC_ID}" \
-        -F "document=@${FILE}" \
-        --form-string "caption=${CAPTION}" \
-        -F "parse_mode=HTML" \
-        --form-string "reply_markup=${reply_markup}" \
-        "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument")
-    else
-      response=$(curl -s -o /tmp/tg_resp.json -w "%{http_code}" \
-        -F "chat_id=${TELEGRAM_CHAT_ID}" \
-        -F "document=@${FILE}" \
-        --form-string "caption=${CAPTION}" \
-        -F "parse_mode=HTML" \
-        --form-string "reply_markup=${reply_markup}" \
-        "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument")
+      curl_args=( -s -o /tmp/tg_resp.json -w "%{http_code}"
+        -F "chat_id=${TELEGRAM_CHAT_ID}"
+        -F "message_thread_id=${TELEGRAM_TOPIC_ID}"
+        -F "document=@${FILE}"
+        --form-string "caption=${CAPTION}"
+        -F "parse_mode=HTML"
+        --form-string "reply_markup=${reply_markup}"
+        "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument"
+      )
     fi
+
+    response="$(curl "${curl_args[@]}")"
 
     if [[ "$response" -eq 200 ]]; then
       log "Backup part sent successfully: $FILE"
@@ -644,6 +652,7 @@ else
   log "Backup file not found: $backup_name. Please check the server."
   exit 1
 fi
+
 
 # Final cleanup
 shopt -s nullglob
