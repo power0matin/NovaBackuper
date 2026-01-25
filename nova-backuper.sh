@@ -183,14 +183,26 @@ cleanup_backups() {
 }
 
 run_all_backup_scripts() {
+  local failed=0
+
   if compgen -G "/root/*${SCRIPT_SUFFIX}" > /dev/null; then
     for script in /root/*${SCRIPT_SUFFIX}; do
       log "Running backup script: $script"
-      bash "$script"
+      if ! bash "$script"; then
+        warn "Backup script failed: $script"
+        failed=$((failed + 1))
+      fi
     done
+
+    if [ "$failed" -gt 0 ]; then
+      warn "Finished running scripts with ${failed} failure(s)."
+    else
+      success "All backup scripts ran successfully."
+    fi
   else
     warn "No backup scripts found in /root directory"
   fi
+
   confirm
 }
 
@@ -470,6 +482,12 @@ telegram_progress() {
 #           Script generator          #
 #######################################
 
+# Escape replacement text for sed (handles &, | and backslashes safely)
+sed_escape() {
+  # Escape: backslash, ampersand, and delimiter |
+  printf '%s' "$1" | sed -e 's/[\\/&|]/\\&/g'
+}
+
 generate_script() {
   clear
   local BACKUP_PATH="/root/_${REMARK}${SCRIPT_SUFFIX}"
@@ -664,18 +682,18 @@ EOL
 
   # Replace placeholders in generated script
   sed -i \
-    -e "s|__REMARK__|${REMARK}|g" \
-    -e "s|__PROJECT_NAME__|${PROJECT_NAME}|g" \
-    -e "s|__VERSION__|${VERSION}|g" \
-    -e "s|__TAG__|${TAG}|g" \
-    -e "s|__BACKUP_SUFFIX__|${BACKUP_SUFFIX}|g" \
-    -e "s|__SPLIT_SIZE__|${SPLIT_SIZE}|g" \
-    -e "s|__XUI_DB_DIR__|${XUI_DB_FOLDER_GLOBAL}|g" \
-    -e "s|__TIMEZONE__|${TIMEZONE}|g" \
-    -e "s|__TG_BOT__|${TELEGRAM_BOT_TOKEN}|g" \
-    -e "s|__TG_CHAT__|${TELEGRAM_CHAT_ID}|g" \
-    -e "s|__TG_TOPIC__|${TELEGRAM_TOPIC_ID}|g" \
-    -e "s|__INTERVAL_MINUTES__|${INTERVAL_MINUTES}|g" \
+    -e "s|__REMARK__|$(sed_escape "${REMARK}")|g" \
+    -e "s|__PROJECT_NAME__|$(sed_escape "${PROJECT_NAME}")|g" \
+    -e "s|__VERSION__|$(sed_escape "${VERSION}")|g" \
+    -e "s|__TAG__|$(sed_escape "${TAG}")|g" \
+    -e "s|__BACKUP_SUFFIX__|$(sed_escape "${BACKUP_SUFFIX}")|g" \
+    -e "s|__SPLIT_SIZE__|$(sed_escape "${SPLIT_SIZE}")|g" \
+    -e "s|__XUI_DB_DIR__|$(sed_escape "${XUI_DB_FOLDER_GLOBAL}")|g" \
+    -e "s|__TIMEZONE__|$(sed_escape "${TIMEZONE}")|g" \
+    -e "s|__TG_BOT__|$(sed_escape "${TELEGRAM_BOT_TOKEN}")|g" \
+    -e "s|__TG_CHAT__|$(sed_escape "${TELEGRAM_CHAT_ID}")|g" \
+    -e "s|__TG_TOPIC__|$(sed_escape "${TELEGRAM_TOPIC_ID}")|g" \
+    -e "s|__INTERVAL_MINUTES__|$(sed_escape "${INTERVAL_MINUTES}")|g" \
     "$BACKUP_PATH"
 
 
