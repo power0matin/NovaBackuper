@@ -738,7 +738,7 @@ EOL
   success "Cron job: $TIMER"
   success "Owner: ${OWNER}"
   exit 0
-
+}
 
 #######################################
 #                 main                #
