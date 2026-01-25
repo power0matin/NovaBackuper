@@ -488,6 +488,12 @@ sed_escape() {
   printf '%s' "$1" | sed -e 's/[\\/&|]/\\&/g'
 }
 
+# Escape replacement text for sed (handles &, | and backslashes safely)
+sed_escape() {
+  # Escape: backslash, ampersand, and delimiter |
+  printf '%s' "$1" | sed -e 's/[\\/&|]/\\&/g'
+}
+
 generate_script() {
   clear
   local BACKUP_PATH="/root/_${REMARK}${SCRIPT_SUFFIX}"
@@ -616,6 +622,10 @@ if ! should_run_now; then
   rc=$?
   exit "$rc"
 fi
+if ! should_run_now; then
+  rc=$?
+  exit "$rc"
+fi
 
 log "Creating backup archive: ${backup_name}"
 
@@ -739,6 +749,7 @@ EOL
   success "Owner: ${OWNER}"
   exit 0
 }
+
 
 #######################################
 #                 main                #
