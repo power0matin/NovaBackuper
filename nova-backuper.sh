@@ -709,7 +709,7 @@ EOL
 
 
   log "Running the backup script for the first time..."
-  
+
   chmod +x "$BACKUP_PATH"
   success "Backup script created: $BACKUP_PATH"
 
@@ -719,23 +719,26 @@ EOL
   else
     rc=$?
     if [ "$rc" -eq 75 ]; then
-      warn "First run skipped: not due yet by interval gate. (This should not happen with FORCE_RUN=1.)"
-      warn "You can force a manual run with: FORCE_RUN=1 bash $BACKUP_PATH"
+      warn "First run skipped: not due yet by interval gate. You can force a manual run with: FORCE_RUN=1 bash $BACKUP_PATH"
     else
       error "Failed to run backup script (exit $rc). Please check the server."
     fi
   fi
 
-
-    success "🎉 ${PROJECT_NAME} is set up and running!"
-    success "Backup script location: $BACKUP_PATH"
-    success "Cron job: $TIMER"
-    success "Owner: ${OWNER}"
-    exit 0
+  log "Setting up cron job..."
+  # Ensure no duplicate cron entry for this script
+  if (crontab -l 2>/dev/null | grep -vF "$BACKUP_PATH" || true; echo "$TIMER $BACKUP_PATH") | crontab -; then
+    success "Cron job set up successfully. Backups will run automatically."
   else
-    error "Failed to run backup script. Please check the server."
+    error "Failed to set up cron job. You can set it manually: $TIMER $BACKUP_PATH"
   fi
-}
+
+  success "🎉 ${PROJECT_NAME} is set up and running!"
+  success "Backup script location: $BACKUP_PATH"
+  success "Cron job: $TIMER"
+  success "Owner: ${OWNER}"
+  exit 0
+
 
 #######################################
 #                 main                #
