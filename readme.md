@@ -229,6 +229,15 @@ You can always:
 If NovaBackuper is useful to you, a **star (⭐)** on the repo is more than enough.
 Thank you for using it!
 
+## 📬 Contact
+
+**Matin Shahabadi (متین شاه‌آبادی / متین شاه آبادی)**
+
+* Website: [matinshahabadi.ir](https://matinshahabadi.ir)
+* Email: [me@matinshahabadi.ir](mailto:me@matinshahabadi.ir)
+* GitHub: [power0matin](https://github.com/power0matin)
+* LinkedIn: [matin-shahabadi](https://www.linkedin.com/in/matin-shahabadi)
+
 🔹 Maintained by [@power0matin](https://github.com/power0matin)
 
 > [!NOTE]  
