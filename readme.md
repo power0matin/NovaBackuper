@@ -2,12 +2,58 @@
   <img src="https://github.com/user-attachments/assets/16cc16e2-f1e5-4ae8-9b5f-bbea33fa39bd" alt="NovaBackuper Logo" />
 </div>
 
-# What is NovaBackuper? [Persian](readme-fa.md)
+# NovaBackuper
 
-**NovaBackuper** is a lightweight, opinionated backup assistant focused on **x-ui** panels.  
-It generates compressed, timestamped backups of your x-ui database and ships them straight to a **Telegram** chat or a **local folder** – fully automated, with cron integration, optional AES-256 encryption, and a full CLI for scripted deployments.
+**NovaBackuper** is a lightweight, opinionated backup assistant focused on **x-ui** panels.
+It generates compressed, timestamped backups of your x-ui database and ships them straight to a **Telegram** chat or a **local folder** — fully automated, with cron integration, optional AES-256 encryption, and a full CLI for scripted deployments.
 
-## Supported Platforms
+🇮🇷 Persian version: [readme-fa.md](readme-fa.md)
+
+---
+
+## 🚀 Quick Install
+
+Run this on your server to install NovaBackuper and launch the setup wizard:
+
+```bash
+sudo bash -c "$(curl -sL https://github.com/power0matin/NovaBackuper/raw/master/nova-backuper.sh)"
+```
+
+This single command will:
+
+1. Update your system packages (using your distro's package manager)
+2. Install required dependencies (`curl`, `zip`, `cron`, etc.)
+3. Launch the interactive **NovaBackuper** wizard
+4. Create a backup script in `/root/`
+5. Run the first backup immediately
+6. Register a cron job so backups keep running automatically
+
+Once installed, your generated script and cron entry will look like this:
+
+```bash
+# Script
+/root/_<remark>_backuper_script.sh
+
+# Cron entry (example: every 5 minutes)
+*/5 * * * * /root/_myxui_backuper_script.sh
+```
+
+Common follow-up commands:
+
+```bash
+# Edit or remove the cron job
+crontab -e
+
+# Run a backup manually
+bash /root/_<remark>_backuper_script.sh
+
+# Force a backup immediately (bypasses the interval gate)
+FORCE_RUN=1 bash /root/_<remark>_backuper_script.sh
+```
+
+---
+
+## Supported Destinations
 
 - [x] **Telegram** (bot token + chat ID)
 - [x] **Local Folder** (any writable path on the server)
@@ -15,7 +61,7 @@ It generates compressed, timestamped backups of your x-ui database and ships the
 
 ## Key Features
 
-- **Interactive installer (wizard-style)**  
+- **Interactive installer (wizard-style)**
   Guided setup for:
   - Backup remark/name
   - Backup interval (cron)
@@ -23,27 +69,27 @@ It generates compressed, timestamped backups of your x-ui database and ships the
   - Telegram bot token & chat ID
   - Optional AES-256 encryption
 
-- **Backup Encryption** _(new in v1.4.0)_
+- **Backup Encryption** _(v1.4.0+)_
   - Optional AES-256 encryption per profile
   - Priority: `7z` (AES-256) → `zip -e` fallback
   - Password is stored securely in the generated script; no manual entry at runtime
 
-- **Multiple Backup Destinations** _(new in v1.4.0)_
-  - **Telegram only** – upload the archive to your bot
-  - **Local Folder only** – copy the archive to any writable path
-  - **Telegram + Local Folder** – do both in a single run
+- **Multiple Backup Destinations** _(v1.4.0+)_
+  - **Telegram only** — upload the archive to your bot
+  - **Local Folder only** — copy the archive to any writable path
+  - **Telegram + Local Folder** — do both in a single run
 
 - **x-ui focused backups**
-  - Backs up:
-    - `/etc/x-ui/x-ui.db`
-    - `/etc/x-ui/x-ui.db-wal`
-    - `/etc/x-ui/x-ui.db-shm`
+  Backs up:
+  - `/etc/x-ui/x-ui.db`
+  - `/etc/x-ui/x-ui.db-wal`
+  - `/etc/x-ui/x-ui.db-shm`
 
 - **Automatic scheduling**
-  - Creates a dedicated script in `/root/_<remark>_backuper_script.sh`
+  - Creates a dedicated script at `/root/_<remark>_backuper_script.sh`
   - Automatically registers a cron job to run your backup on the interval you choose
 
-- **Real profile editor** _(new in v1.4.0)_
+- **Real profile editor** _(v1.4.0+)_
 
   After selecting a profile you can change individual settings without recreating the whole profile:
 
@@ -60,7 +106,7 @@ It generates compressed, timestamped backups of your x-ui database and ships the
 
   Cron is updated automatically when the interval or remark changes.
 
-- **Full CLI / Silent mode** _(new in v1.4.0)_
+- **Full CLI / Silent mode** _(v1.4.0+)_
 
   ```bash
   # Install a new profile non-interactively
@@ -90,63 +136,12 @@ It generates compressed, timestamped backups of your x-ui database and ships the
   - Old backup chunks for the same remark are cleaned up before/after each run
 
 - **Human-friendly Telegram reports**
-  - Rich HTML caption with:
-    - Date, time & timezone
-    - Server IP & hostname
-    - Backup ID
-  - Sent directly to your chosen Telegram chat or topic thread
+  Rich HTML caption with:
+  - Date, time & timezone
+  - Server IP & hostname
+  - Backup ID
 
-### Timezone examples
-
-<details>
-<summary><b>Click to show common timezone values (IANA names)</b></summary>
-
-These are example timezone strings you can use when NovaBackuper asks for your timezone.
-
-| Region         | Country / City              | Timezone (IANA)                  |
-| -------------- | --------------------------- | -------------------------------- |
-| Middle East    | Iran                        | `Asia/Tehran`                    |
-| Middle East    | Turkey                      | `Europe/Istanbul`                |
-| Middle East    | Saudi Arabia                | `Asia/Riyadh`                    |
-| Middle East    | United Arab Emirates        | `Asia/Dubai`                     |
-| Middle East    | Qatar                       | `Asia/Qatar`                     |
-| Middle East    | Iraq                        | `Asia/Baghdad`                   |
-| Middle East    | Israel                      | `Asia/Jerusalem`                 |
-| Europe         | United Kingdom (London)     | `Europe/London`                  |
-| Europe         | Germany (Berlin)            | `Europe/Berlin`                  |
-| Europe         | France (Paris)              | `Europe/Paris`                   |
-| Europe         | Italy (Rome)                | `Europe/Rome`                    |
-| Europe         | Spain (Madrid)              | `Europe/Madrid`                  |
-| Europe         | Netherlands (Amsterdam)     | `Europe/Amsterdam`               |
-| Europe         | Sweden (Stockholm)          | `Europe/Stockholm`               |
-| Europe         | Norway (Oslo)               | `Europe/Oslo`                    |
-| Europe         | Russia (Moscow)             | `Europe/Moscow`                  |
-| Americas       | USA – East (New York)       | `America/New_York`               |
-| Americas       | USA – Central (Chicago)     | `America/Chicago`                |
-| Americas       | USA – Mountain (Denver)     | `America/Denver`                 |
-| Americas       | USA – West (Los Angeles)    | `America/Los_Angeles`            |
-| Americas       | Canada – East (Toronto)     | `America/Toronto`                |
-| Americas       | Canada – West (Vancouver)   | `America/Vancouver`              |
-| Americas       | Brazil (São Paulo)          | `America/Sao_Paulo`              |
-| Americas       | Argentina (Buenos Aires)    | `America/Argentina/Buenos_Aires` |
-| Americas       | Mexico (Mexico City)        | `America/Mexico_City`            |
-| Asia & Pacific | India (Kolkata)             | `Asia/Kolkata`                   |
-| Asia & Pacific | Pakistan (Karachi)          | `Asia/Karachi`                   |
-| Asia & Pacific | China (Shanghai)            | `Asia/Shanghai`                  |
-| Asia & Pacific | Hong Kong                   | `Asia/Hong_Kong`                 |
-| Asia & Pacific | Japan (Tokyo)               | `Asia/Tokyo`                     |
-| Asia & Pacific | South Korea (Seoul)         | `Asia/Seoul`                     |
-| Asia & Pacific | Singapore                   | `Asia/Singapore`                 |
-| Asia & Pacific | Indonesia (Jakarta)         | `Asia/Jakarta`                   |
-| Asia & Pacific | Australia (Sydney)          | `Australia/Sydney`               |
-| Asia & Pacific | Australia (Perth)           | `Australia/Perth`                |
-| Asia & Pacific | New Zealand (Auckland)      | `Pacific/Auckland`               |
-| Africa         | Egypt (Cairo)               | `Africa/Cairo`                   |
-| Africa         | South Africa (Johannesburg) | `Africa/Johannesburg`            |
-| Africa         | Nigeria (Lagos)             | `Africa/Lagos`                   |
-| Africa         | Kenya (Nairobi)             | `Africa/Nairobi`                 |
-
-</details>
+  Sent directly to your chosen Telegram chat or topic thread.
 
 - **Cross-distro support**
   - Detects package manager (`apt`, `dnf`, `yum`, `pacman`)
@@ -158,58 +153,57 @@ NovaBackuper is intentionally **focused** and minimal:
 
 - [x] **x-ui panel** (SQLite database in `/etc/x-ui`)
 
-## Installation
+### Timezone examples
 
-To install the latest version, run:
+<details>
+<summary><b>Click to show common timezone values (IANA names)</b></summary>
 
-```bash
-sudo bash -c "$(curl -sL https://github.com/power0matin/NovaBackuper/raw/master/nova-backuper.sh)"
-```
+These are example timezone strings you can use when NovaBackuper asks for your timezone.
 
-This will:
+| Region         | Country / City              | Timezone (IANA)                  |
+| -------------- | ---------------------------- | -------------------------------- |
+| Middle East    | Iran                          | `Asia/Tehran`                    |
+| Middle East    | Turkey                        | `Europe/Istanbul`                |
+| Middle East    | Saudi Arabia                  | `Asia/Riyadh`                    |
+| Middle East    | United Arab Emirates          | `Asia/Dubai`                     |
+| Middle East    | Qatar                         | `Asia/Qatar`                     |
+| Middle East    | Iraq                          | `Asia/Baghdad`                   |
+| Middle East    | Israel                        | `Asia/Jerusalem`                 |
+| Europe         | United Kingdom (London)       | `Europe/London`                  |
+| Europe         | Germany (Berlin)              | `Europe/Berlin`                  |
+| Europe         | France (Paris)                | `Europe/Paris`                   |
+| Europe         | Italy (Rome)                  | `Europe/Rome`                    |
+| Europe         | Spain (Madrid)                | `Europe/Madrid`                  |
+| Europe         | Netherlands (Amsterdam)       | `Europe/Amsterdam`               |
+| Europe         | Sweden (Stockholm)            | `Europe/Stockholm`               |
+| Europe         | Norway (Oslo)                 | `Europe/Oslo`                    |
+| Europe         | Russia (Moscow)               | `Europe/Moscow`                  |
+| Americas       | USA – East (New York)         | `America/New_York`               |
+| Americas       | USA – Central (Chicago)       | `America/Chicago`                |
+| Americas       | USA – Mountain (Denver)       | `America/Denver`                 |
+| Americas       | USA – West (Los Angeles)      | `America/Los_Angeles`            |
+| Americas       | Canada – East (Toronto)       | `America/Toronto`                |
+| Americas       | Canada – West (Vancouver)     | `America/Vancouver`              |
+| Americas       | Brazil (São Paulo)            | `America/Sao_Paulo`              |
+| Americas       | Argentina (Buenos Aires)      | `America/Argentina/Buenos_Aires` |
+| Americas       | Mexico (Mexico City)          | `America/Mexico_City`            |
+| Asia & Pacific | India (Kolkata)               | `Asia/Kolkata`                   |
+| Asia & Pacific | Pakistan (Karachi)            | `Asia/Karachi`                   |
+| Asia & Pacific | China (Shanghai)              | `Asia/Shanghai`                  |
+| Asia & Pacific | Hong Kong                     | `Asia/Hong_Kong`                 |
+| Asia & Pacific | Japan (Tokyo)                 | `Asia/Tokyo`                     |
+| Asia & Pacific | South Korea (Seoul)           | `Asia/Seoul`                     |
+| Asia & Pacific | Singapore                     | `Asia/Singapore`                 |
+| Asia & Pacific | Indonesia (Jakarta)           | `Asia/Jakarta`                   |
+| Asia & Pacific | Australia (Sydney)            | `Australia/Sydney`               |
+| Asia & Pacific | Australia (Perth)             | `Australia/Perth`                |
+| Asia & Pacific | New Zealand (Auckland)        | `Pacific/Auckland`               |
+| Africa         | Egypt (Cairo)                  | `Africa/Cairo`                   |
+| Africa         | South Africa (Johannesburg)    | `Africa/Johannesburg`            |
+| Africa         | Nigeria (Lagos)                | `Africa/Lagos`                   |
+| Africa         | Kenya (Nairobi)                | `Africa/Nairobi`                 |
 
-1. Update your system packages (with your distro's package manager)
-2. Install required dependencies
-3. Launch the interactive **NovaBackuper** wizard
-4. Create a backup script in `/root/`
-5. Run the first backup immediately
-6. Register a cron job to keep backups running automatically
-
-## Usage (Quick Overview)
-
-After running the installer:
-
-- Your generated script will look like:
-
-  ```bash
-  /root/_<remark>_backuper_script.sh
-  ```
-
-- A cron entry will be created similar to:
-
-  ```cron
-  */5 * * * * /root/_myxui_backuper_script.sh
-  ```
-
-You can always:
-
-- Edit or remove the cron job with:
-
-  ```bash
-  crontab -e
-  ```
-
-- Run a backup manually:
-
-  ```bash
-  bash /root/_<remark>_backuper_script.sh
-  ```
-
-- Force a backup immediately (bypasses the interval gate):
-
-  ```bash
-  FORCE_RUN=1 bash /root/_<remark>_backuper_script.sh
-  ```
+</details>
 
 ## Changelog
 
@@ -233,15 +227,15 @@ Thank you for using it!
 
 **Matin Shahabadi (متین شاه‌آبادی / متین شاه آبادی)**
 
-* Website: [matinshahabadi.ir](https://matinshahabadi.ir)
-* Email: [me@matinshahabadi.ir](mailto:me@matinshahabadi.ir)
-* GitHub: [power0matin](https://github.com/power0matin)
-* LinkedIn: [matin-shahabadi](https://www.linkedin.com/in/matin-shahabadi)
+- Website: [matinshahabadi.ir](https://matinshahabadi.ir)
+- Email: [me@matinshahabadi.ir](mailto:me@matinshahabadi.ir)
+- GitHub: [power0matin](https://github.com/power0matin)
+- LinkedIn: [matin-shahabadi](https://www.linkedin.com/in/matin-shahabadi)
 
 🔹 Maintained by [@power0matin](https://github.com/power0matin)
 
-> [!NOTE]  
-> NovaBackuper started as a fork of [Backuper](https://github.com/erfjab/Backuper) and evolved into a focused variant for **x-ui + Telegram**.  
+> [!NOTE]
+> NovaBackuper started as a fork of [Backuper](https://github.com/erfjab/Backuper) and evolved into a focused variant for **x-ui + Telegram**.
 > Huge thanks to **@ErfJabs** for the original idea and base implementation.
 
 [![Stargazers over time](https://starchart.cc/power0matin/NovaBackuper.svg?variant=adaptive)](https://starchart.cc/power0matin/NovaBackuper)
