@@ -1,13 +1,71 @@
-<div align="center">  
-  <img src="https://github.com/user-attachments/assets/16cc16e2-f1e5-4ae8-9b5f-bbea33fa39bd" alt=" لوگوی NovaBackuper" />  
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/16cc16e2-f1e5-4ae8-9b5f-bbea33fa39bd" alt="لوگوی NovaBackuper" />
 </div>
 
 <div dir="rtl" align="right">
 
-# نوا بکاپر چیه؟
+# NovaBackuper
 
-**NovaBackuper** یک اسکریپت بکاپ‌گیری سبک و حرفه‌ای برای **پنل x-ui** است که دیتابیس x-ui را فشرده می‌کند و به صورت خودکار برای شما در **تلگرام** ارسال یا در یک **پوشه محلی** ذخیره می‌کند.  
-نصب آن تعاملی (ویزارد‌ی) است و در نهایت برای شما اسکریپت بکاپ + کران‌جاب می‌سازد تا بکاپ‌ها به صورت خودکار انجام شوند. همچنین رمزنگاری AES-256 اختیاری و پشتیبانی کامل از خط فرمان (CLI) نیز ارائه می‌دهد.
+**NovaBackuper** یک اسکریپت بکاپ‌گیری سبک و حرفه‌ای برای **پنل x-ui** است که دیتابیس x-ui را فشرده می‌کند و به‌صورت خودکار برای شما در **تلگرام** ارسال یا در یک **پوشه محلی** ذخیره می‌کند.
+نصب آن تعاملی (ویزاردی) است و در نهایت برای شما اسکریپت بکاپ + کران‌جاب می‌سازد تا بکاپ‌ها به‌صورت خودکار انجام شوند. همچنین رمزنگاری AES-256 اختیاری و پشتیبانی کامل از خط فرمان (CLI) نیز ارائه می‌دهد.
+
+🇬🇧 نسخه انگلیسی: [README.md](README.md)
+
+---
+
+## 🚀 نصب سریع
+
+این دستور را روی سرور خود اجرا کنید تا NovaBackuper نصب شده و ویزارد تنظیمات اجرا شود:
+
+<div dir="ltr" align="left">
+
+```bash
+sudo bash -c "$(curl -sL https://github.com/power0matin/NovaBackuper/raw/master/nova-backuper.sh)"
+```
+
+</div>
+
+این دستور به‌تنهایی کارهای زیر را انجام می‌دهد:
+
+1. آپدیت پکیج‌های سیستم (بر اساس پکیج منیجر توزیع شما)
+2. نصب وابستگی‌های لازم (`curl`، `zip`، `cron` و…)
+3. اجرای ویزارد نصب تعاملی NovaBackuper
+4. ساخت اسکریپت بکاپ در `/root/`
+5. اجرای اولین بکاپ به‌صورت خودکار
+6. ساخت cron job برای بکاپ‌گیری خودکار در بازه زمانی دلخواه شما
+
+بعد از نصب، اسکریپت و کران‌جاب ساخته‌شده چیزی شبیه این خواهند بود:
+
+<div dir="ltr" align="left">
+
+```bash
+# اسکریپت
+/root/_<remark>_backuper_script.sh
+
+# کران‌جاب (مثال: هر ۵ دقیقه)
+*/5 * * * * /root/_myxui_backuper_script.sh
+```
+
+</div>
+
+دستورات پرکاربرد بعد از نصب:
+
+<div dir="ltr" align="left">
+
+```bash
+# ویرایش یا حذف کران‌جاب
+crontab -e
+
+# اجرای دستی بکاپ
+bash /root/_<remark>_backuper_script.sh
+
+# اجرای اجباری فوری (بدون توجه به بازه زمانی)
+FORCE_RUN=1 bash /root/_<remark>_backuper_script.sh
+```
+
+</div>
+
+---
 
 ## پلتفرم‌های پشتیبانی‌شده
 
@@ -17,7 +75,7 @@
 
 ## ویژگی‌های کلیدی
 
-- **نصاب تعاملی (Wizard)**  
+- **نصاب تعاملی (Wizard)**
   در حین نصب از شما می‌پرسد:
   - نام/توضیح بکاپ (Remark)
   - بازه زمانی بکاپ‌گیری (دقیقه‌ای / ساعتی با cron)
@@ -25,17 +83,17 @@
   - Bot Token و Chat ID تلگرام
   - رمزنگاری اختیاری AES-256
 
-- **رمزنگاری بکاپ** _(جدید در v1.4.0)_
+- **رمزنگاری بکاپ** _(از نسخه v1.4.0)_
   - رمزنگاری اختیاری AES-256 به ازای هر پروفایل
   - اولویت: `7z` (AES-256) ← اگر نبود: `zip -e`
-  - پسورد به صورت امن در اسکریپت تولیدشده ذخیره می‌شود؛ در زمان اجرا نیازی به وارد کردن دستی ندارید
+  - پسورد به‌صورت امن در اسکریپت تولیدشده ذخیره می‌شود؛ در زمان اجرا نیازی به وارد کردن دستی ندارید
 
-- **چند مقصد بکاپ** _(جدید در v1.4.0)_
+- **چند مقصد بکاپ** _(از نسخه v1.4.0)_
   - **فقط Telegram** – آپلود آرشیو به ربات
   - **فقط پوشه محلی** – کپی آرشیو به یک مسیر قابل نوشتن
   - **Telegram + پوشه محلی** – هر دو در یک اجرا
 
-- **تمرکز روی x-ui**  
+- **تمرکز روی x-ui**
   بکاپ‌گیری از فایل‌های اصلی دیتابیس x-ui:
   <div dir="ltr" align="left">
     <ul dir="ltr">
@@ -55,7 +113,7 @@
 
   - تنظیم خودکار **cron job** بر اساس بازه زمانی‌ای که انتخاب می‌کنید
 
-- **ویرایشگر واقعی پروفایل** _(جدید در v1.4.0)_
+- **ویرایشگر واقعی پروفایل** _(از نسخه v1.4.0)_
 
   بعد از انتخاب یک پروفایل، می‌توانید تنظیمات جداگانه را بدون حذف و ساخت مجدد پروفایل تغییر دهید:
 
@@ -74,9 +132,9 @@
 
   </div>
 
-  با تغییر بازه زمانی یا remark، کران‌جاب هم به صورت خودکار به‌روزرسانی می‌شود.
+  با تغییر بازه زمانی یا remark، کران‌جاب هم به‌صورت خودکار به‌روزرسانی می‌شود.
 
-- **حالت CLI / Silent** _(جدید در v1.4.0)_
+- **حالت CLI / Silent** _(از نسخه v1.4.0)_
 
   <div dir="ltr" align="left">
 
@@ -110,11 +168,24 @@
   - پاک‌سازی چانک‌های قدیمی مربوط به همان remark قبل و بعد از هر بکاپ
 
 - **گزارش کامل در تلگرام**
-  - کپشن HTML حرفه‌ای شامل:
-    - تاریخ، ساعت و منطقه زمانی
-    - IP سرور و Hostname
-    - Backup ID
-  - ارسال مستقیم به چت تلگرام/گروه/تاپیک مورد نظر شما
+  کپشن HTML حرفه‌ای شامل:
+  - تاریخ، ساعت و منطقه زمانی
+  - IP سرور و Hostname
+  - Backup ID
+
+  ارسال مستقیم به چت تلگرام/گروه/تاپیک مورد نظر شما.
+
+- **پشتیبانی از چند توزیع لینوکس**
+  - تشخیص خودکار پکیج منیجر
+    <span dir="ltr">`apt`, `dnf`, `yum`, `pacman`</span>
+  - نصب اتوماتیک ابزارهای مورد نیاز
+    <span dir="ltr">`curl`, `zip`, `cron` و …</span>
+
+## قالب‌های پشتیبانی‌شده
+
+NovaBackuper عمداً مینیمال و تخصصی طراحی شده:
+
+- [x] **پنل x-ui** (دیتابیس SQLite در مسیر <span dir="ltr">`/etc/x-ui`</span>)
 
 ### نمونه مقادیر Timezone (IANA)
 
@@ -127,147 +198,60 @@
 
 <div dir="ltr" align="left">
 
-| Region       | Country / City              | Timezone (IANA)                  |
-| ------------ | --------------------------- | -------------------------------- |
-| Middle East  | Iran                        | `Asia/Tehran`                    |
-| Middle East  | Türkiye                     | `Europe/Istanbul`                |
-| Middle East  | Saudi Arabia                | `Asia/Riyadh`                    |
-| Middle East  | United Arab Emirates        | `Asia/Dubai`                     |
-| Middle East  | Qatar                       | `Asia/Qatar`                     |
-| Middle East  | Iraq                        | `Asia/Baghdad`                   |
-| Middle East  | Israel                      | `Asia/Jerusalem`                 |
-| Europe       | United Kingdom (London)     | `Europe/London`                  |
-| Europe       | Germany (Berlin)            | `Europe/Berlin`                  |
-| Europe       | France (Paris)              | `Europe/Paris`                   |
-| Europe       | Italy (Rome)                | `Europe/Rome`                    |
-| Europe       | Spain (Madrid)              | `Europe/Madrid`                  |
-| Europe       | Netherlands (Amsterdam)     | `Europe/Amsterdam`               |
-| Europe       | Sweden (Stockholm)          | `Europe/Stockholm`               |
-| Europe       | Norway (Oslo)               | `Europe/Oslo`                    |
-| Europe       | Russia (Moscow)             | `Europe/Moscow`                  |
-| Americas     | USA – East (New York)       | `America/New_York`               |
-| Americas     | USA – Central (Chicago)     | `America/Chicago`                |
-| Americas     | USA – Mountain (Denver)     | `America/Denver`                 |
-| Americas     | USA – West (Los Angeles)    | `America/Los_Angeles`            |
-| Americas     | Canada – East (Toronto)     | `America/Toronto`                |
-| Americas     | Canada – West (Vancouver)   | `America/Vancouver`              |
-| Americas     | Brazil (São Paulo)          | `America/Sao_Paulo`              |
-| Americas     | Argentina (Buenos Aires)    | `America/Argentina/Buenos_Aires` |
-| Americas     | Mexico (Mexico City)        | `America/Mexico_City`            |
-| Asia-Pacific | India (Kolkata)             | `Asia/Kolkata`                   |
-| Asia-Pacific | Pakistan (Karachi)          | `Asia/Karachi`                   |
-| Asia-Pacific | China (Shanghai)            | `Asia/Shanghai`                  |
-| Asia-Pacific | Hong Kong                   | `Asia/Hong_Kong`                 |
-| Asia-Pacific | Japan (Tokyo)               | `Asia/Tokyo`                     |
-| Asia-Pacific | South Korea (Seoul)         | `Asia/Seoul`                     |
-| Asia-Pacific | Singapore                   | `Asia/Singapore`                 |
-| Asia-Pacific | Indonesia (Jakarta)         | `Asia/Jakarta`                   |
-| Asia-Pacific | Australia (Sydney)          | `Australia/Sydney`               |
-| Asia-Pacific | Australia (Perth)           | `Australia/Perth`                |
-| Asia-Pacific | New Zealand (Auckland)      | `Pacific/Auckland`               |
-| Africa       | Egypt (Cairo)               | `Africa/Cairo`                   |
-| Africa       | South Africa (Johannesburg) | `Africa/Johannesburg`            |
-| Africa       | Nigeria (Lagos)             | `Africa/Lagos`                   |
-| Africa       | Kenya (Nairobi)             | `Africa/Nairobi`                 |
+| Region       | Country / City               | Timezone (IANA)                  |
+| ------------ | ------------------------------ | -------------------------------- |
+| Middle East  | Iran                            | `Asia/Tehran`                    |
+| Middle East  | Türkiye                         | `Europe/Istanbul`                |
+| Middle East  | Saudi Arabia                    | `Asia/Riyadh`                    |
+| Middle East  | United Arab Emirates            | `Asia/Dubai`                     |
+| Middle East  | Qatar                           | `Asia/Qatar`                     |
+| Middle East  | Iraq                            | `Asia/Baghdad`                   |
+| Middle East  | Israel                          | `Asia/Jerusalem`                 |
+| Europe       | United Kingdom (London)         | `Europe/London`                  |
+| Europe       | Germany (Berlin)                | `Europe/Berlin`                  |
+| Europe       | France (Paris)                  | `Europe/Paris`                   |
+| Europe       | Italy (Rome)                    | `Europe/Rome`                    |
+| Europe       | Spain (Madrid)                  | `Europe/Madrid`                  |
+| Europe       | Netherlands (Amsterdam)         | `Europe/Amsterdam`               |
+| Europe       | Sweden (Stockholm)              | `Europe/Stockholm`               |
+| Europe       | Norway (Oslo)                   | `Europe/Oslo`                    |
+| Europe       | Russia (Moscow)                 | `Europe/Moscow`                  |
+| Americas     | USA – East (New York)           | `America/New_York`               |
+| Americas     | USA – Central (Chicago)         | `America/Chicago`                |
+| Americas     | USA – Mountain (Denver)         | `America/Denver`                 |
+| Americas     | USA – West (Los Angeles)        | `America/Los_Angeles`            |
+| Americas     | Canada – East (Toronto)         | `America/Toronto`                |
+| Americas     | Canada – West (Vancouver)       | `America/Vancouver`              |
+| Americas     | Brazil (São Paulo)              | `America/Sao_Paulo`              |
+| Americas     | Argentina (Buenos Aires)        | `America/Argentina/Buenos_Aires` |
+| Americas     | Mexico (Mexico City)            | `America/Mexico_City`            |
+| Asia-Pacific | India (Kolkata)                 | `Asia/Kolkata`                   |
+| Asia-Pacific | Pakistan (Karachi)              | `Asia/Karachi`                   |
+| Asia-Pacific | China (Shanghai)                | `Asia/Shanghai`                  |
+| Asia-Pacific | Hong Kong                       | `Asia/Hong_Kong`                 |
+| Asia-Pacific | Japan (Tokyo)                   | `Asia/Tokyo`                     |
+| Asia-Pacific | South Korea (Seoul)             | `Asia/Seoul`                     |
+| Asia-Pacific | Singapore                       | `Asia/Singapore`                 |
+| Asia-Pacific | Indonesia (Jakarta)             | `Asia/Jakarta`                   |
+| Asia-Pacific | Australia (Sydney)              | `Australia/Sydney`               |
+| Asia-Pacific | Australia (Perth)               | `Australia/Perth`                |
+| Asia-Pacific | New Zealand (Auckland)          | `Pacific/Auckland`               |
+| Africa       | Egypt (Cairo)                    | `Africa/Cairo`                   |
+| Africa       | South Africa (Johannesburg)      | `Africa/Johannesburg`            |
+| Africa       | Nigeria (Lagos)                  | `Africa/Lagos`                   |
+| Africa       | Kenya (Nairobi)                  | `Africa/Nairobi`                 |
 
 </div>
 
 </details>
-
-- **پشتیبانی از چند توزیع لینوکس**
-  - تشخیص خودکار پکیج منیجر  
-    <span dir="ltr">`apt`, `dnf`, `yum`, `pacman`</span>
-  - نصب اتوماتیک ابزارهای مورد نیاز  
-    <span dir="ltr">`curl`, `zip`, `cron` و …</span>
-
-## قالب‌های پشتیبانی‌شده
-
-NovaBackuper عمداً مینیمال و تخصصی طراحی شده:
-
-- [x] **پنل x-ui** (دیتابیس SQLite در مسیر <span dir="ltr">`/etc/x-ui`</span>)
-
-## نصب
-
-برای نصب آخرین نسخه، این دستور را اجرا کنید:
-
-<div dir="ltr" align="left">
-
-```bash
-sudo bash -c "$(curl -sL https://github.com/power0matin/NovaBackuper/raw/master/nova-backuper.sh)"
-```
-
-</div>
-
-این اسکریپت کارهای زیر را انجام می‌دهد:
-
-1. آپدیت پکیج‌های سیستم
-2. نصب وابستگی‌های لازم
-3. اجرای ویزارد نصب NovaBackuper
-4. ساخت اسکریپت بکاپ در `/root/`
-5. اجرای اولین بکاپ به صورت خودکار
-6. ساخت cron job برای بکاپ‌گیری خودکار در بازه زمانی دلخواه شما
-
-## استفاده (خلاصه)
-
-بعد از نصب، معمولاً اسکریپت ساخته‌شده این شکلی است:
-
-<div dir="ltr" align="left">
-
-```bash
-/root/_<remark>_backuper_script.sh
-```
-
-</div>
-
-کران‌جاب هم شبیه این خواهد بود (مثلاً هر ۳۰ دقیقه):
-
-<div dir="ltr" align="left">
-
-```cron
-*/5 * * * * /root/_myxui_backuper_script.sh
-```
-
-</div>
-
-شما می‌توانید:
-
-- برای ویرایش یا حذف کران‌جاب:
-
-  <div dir="ltr" align="left">
-
-  ```bash
-  crontab -e
-  ```
-
-  </div>
-
-- برای اجرای دستی بکاپ:
-
-  <div dir="ltr" align="left">
-
-  ```bash
-  bash /root/_<remark>_backuper_script.sh
-  ```
-
-  </div>
-
-- برای اجرای اجباری فوری (بدون توجه به بازه زمانی):
-
-  <div dir="ltr" align="left">
-
-  ```bash
-  FORCE_RUN=1 bash /root/_<remark>_backuper_script.sh
-  ```
-
-  </div>
 
 ## تاریخچه تغییرات
 
 ### v1.4.0
 
 - **رمزنگاری بکاپ** – رمزنگاری اختیاری AES-256 به ازای هر پروفایل از طریق `7z` یا `zip -e`
-- **چند مقصد** – Telegram، پوشه محلی، یا هر دو به صورت همزمان
-- **ویرایشگر واقعی پروفایل** – ویرایش تنظیمات جداگانه بدون حذف پروفایل؛ کران‌جاب به صورت خودکار به‌روز می‌شود
+- **چند مقصد** – Telegram، پوشه محلی، یا هر دو به‌صورت همزمان
+- **ویرایشگر واقعی پروفایل** – ویرایش تنظیمات جداگانه بدون حذف پروفایل؛ کران‌جاب به‌صورت خودکار به‌روز می‌شود
 - **حالت Silent / CLI** – پشتیبانی کامل از `--install`، `--edit`، `--remove`، `--run`، `--update`، `--help` برای استقرار خودکار
 
 ### v1.0.0
@@ -279,10 +263,19 @@ sudo bash -c "$(curl -sL https://github.com/power0matin/NovaBackuper/raw/master/
 اگر NovaBackuper برای شما مفید بود، یک **ستاره (⭐)** روی ریپو، بهترین حمایت است.
 ممنون که از آن استفاده می‌کنید.
 
+## 📬 ارتباط
+
+**Matin Shahabadi (متین شاه‌آبادی / متین شاه آبادی)**
+
+- وب‌سایت: [matinshahabadi.ir](https://matinshahabadi.ir)
+- ایمیل: [me@matinshahabadi.ir](mailto:me@matinshahabadi.ir)
+- گیت‌هاب: [power0matin](https://github.com/power0matin)
+- لینکدین: [matin-shahabadi](https://www.linkedin.com/in/matin-shahabadi)
+
 🔹 توسعه و نگهداری توسط [@power0matin](https://github.com/power0matin)
 
-> [!NOTE]  
-> NovaBackuper بر اساس پروژه‌ی [Backuper](https://github.com/erfjab/Backuper) توسعه داده شده و به نسخه‌ای متمرکز روی **x-ui + Telegram** تبدیل شده است.  
+> [!NOTE]
+> NovaBackuper بر اساس پروژه‌ی [Backuper](https://github.com/erfjab/Backuper) توسعه داده شده و به نسخه‌ای متمرکز روی **x-ui + Telegram** تبدیل شده است.
 > از **@ErfJabs** برای ایده و پایه‌ی اولیه پروژه قدردانی می‌کنیم.
 
 [![Stargazers over time](https://starchart.cc/power0matin/NovaBackuper.svg?variant=adaptive)](https://starchart.cc/power0matin/NovaBackuper)
