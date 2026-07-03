@@ -11,7 +11,6 @@
 
 🇬🇧 نسخه انگلیسی: [README.md](README.md)
 
----
 
 ## 🚀 نصب سریع
 
@@ -65,7 +64,6 @@ FORCE_RUN=1 bash /root/_<remark>_backuper_script.sh
 
 </div>
 
----
 
 ## پلتفرم‌های پشتیبانی‌شده
 
