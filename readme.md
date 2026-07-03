@@ -9,7 +9,6 @@ It generates compressed, timestamped backups of your x-ui database and ships the
 
 🇮🇷 Persian version: [readme-fa.md](readme-fa.md)
 
----
 
 ## 🚀 Quick Install
 
@@ -51,8 +50,7 @@ bash /root/_<remark>_backuper_script.sh
 FORCE_RUN=1 bash /root/_<remark>_backuper_script.sh
 ```
 
----
-
+ 
 ## Supported Destinations
 
 - [x] **Telegram** (bot token + chat ID)
