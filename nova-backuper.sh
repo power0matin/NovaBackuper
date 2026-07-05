@@ -88,15 +88,7 @@ update_os() {
   success "System updated successfully"
 }
 
-readonly DEPS_MARKER="/var/lib/novabackuper/.deps_installed"
-
 install_dependencies() {
-  # Only install once per host; avoids hitting the network/package manager
-  # every single time the menu is opened.
-  if [[ -f "$DEPS_MARKER" ]]; then
-    return 0
-  fi
-
   local package_manager
   package_manager=$(detect_package_manager)
 
@@ -125,8 +117,6 @@ install_dependencies() {
       ;;
   esac
 
-  mkdir -p "$(dirname "$DEPS_MARKER")"
-  touch "$DEPS_MARKER"
   success "Dependencies installed successfully"
 }
 
@@ -160,7 +150,12 @@ require_encrypt_tool() {
 #######################################
 
 menu() {
-  install_dependencies
+  local dep_sentinel="/var/lib/novabackuper/.deps_installed"
+  if [[ ! -f "$dep_sentinel" ]]; then
+    install_dependencies
+    mkdir -p "$(dirname "$dep_sentinel")"
+    touch "$dep_sentinel"
+  fi
 
   while true; do
     clear
@@ -210,7 +205,7 @@ menu() {
 cleanup_backups() {
   print "Removing all NovaBackuper scripts and related backup files..."
 
-  rm -rf /root/*"$SCRIPT_SUFFIX" /root/*"$TAG"*
+  rm -rf /root/*"$SCRIPT_SUFFIX" /root/*"$TAG"* /root/*_backuper.sh
 
   crontab -l 2>/dev/null | grep -v "$SCRIPT_SUFFIX" | crontab - || true
 
@@ -410,7 +405,6 @@ _edit_remark() {
       local new_script="/root/_${new_remark}${SCRIPT_SUFFIX}"
       _set_script_value "$script" "REMARK" "$new_remark"
       mv "$script" "$new_script"
-      chmod 600 "$new_script"
       # Update cron entry
       crontab -l 2>/dev/null | sed "s|${script}|${new_script}|g" | crontab - || true
       success "Remark changed to: ${new_remark}. Script renamed."
@@ -516,29 +510,26 @@ _edit_telegram() {
     fi
   done
 
-  local do_test="y"
-  input "Send a test message to verify these credentials? (y/n): " do_test
-  if [[ "$do_test" =~ ^[Yy]$ ]]; then
-    log "Validating Telegram credentials..."
-    local response
-    if [[ -n "$new_topic" ]]; then
-      response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-        "https://api.telegram.org/bot${new_token}/sendMessage" \
-        -d chat_id="$new_chat" \
-        -d message_thread_id="$new_topic" \
-        -d text="Hi from ${PROJECT_NAME} (test message).")
-    else
-      response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-        "https://api.telegram.org/bot${new_token}/sendMessage" \
-        -d chat_id="$new_chat" \
-        -d text="Hi from ${PROJECT_NAME} (test message).")
-    fi
+  # Validate
+  log "Validating Telegram credentials..."
+  local response
+  if [[ -n "$new_topic" ]]; then
+    response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+      "https://api.telegram.org/bot${new_token}/sendMessage" \
+      -d chat_id="$new_chat" \
+      -d message_thread_id="$new_topic" \
+      -d text="Hi from ${PROJECT_NAME} (test message).")
+  else
+    response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+      "https://api.telegram.org/bot${new_token}/sendMessage" \
+      -d chat_id="$new_chat" \
+      -d text="Hi from ${PROJECT_NAME} (test message).")
+  fi
 
-    if [[ "$response" -ne 200 ]]; then
-      wrong "Telegram validation failed (HTTP $response). Settings not saved."
-      sleep 2
-      return
-    fi
+  if [[ "$response" -ne 200 ]]; then
+    wrong "Telegram validation failed (HTTP $response). Settings not saved."
+    sleep 2
+    return
   fi
 
   _set_script_value "$script" "TELEGRAM_BOT_TOKEN" "$new_token"
@@ -641,7 +632,7 @@ update_novabackuper() {
   print "[UPDATE]\n"
 
   local url="https://github.com/power0matin/NovaBackuper/raw/master/nova-backuper.sh"
-  local checksum_url="https://github.com/power0matin/NovaBackuper/raw/master/nova-backuper.sh.sha256"
+  local checksum_url="${url}.sha256"
   local target="/root/nova-backuper.sh"
 
   print "Downloading latest ${PROJECT_NAME}..."
@@ -652,26 +643,29 @@ update_novabackuper() {
     return
   fi
 
-  # Verify integrity if a checksum file is published. If the checksum file
-  # can't be fetched (e.g. not yet published), warn but don't hard-fail so
-  # the tool degrades gracefully rather than bricking updates.
-  local expected_sum actual_sum
-  if expected_sum=$(curl -fsSL "$checksum_url" 2>/dev/null | awk '{print $1}') && [[ -n "$expected_sum" ]]; then
-    actual_sum=$(sha256sum "${target}.tmp" | awk '{print $1}')
-    if [[ "$expected_sum" != "$actual_sum" ]]; then
-      wrong "Checksum mismatch! Expected ${expected_sum}, got ${actual_sum}."
-      wrong "Refusing to install a script that failed integrity verification."
+  # Verify integrity before ever executing the downloaded file as root.
+  # If a checksum file isn't published yet, warn loudly rather than fail silently.
+  if curl -fsSL "$checksum_url" -o "${target}.sha256.tmp" 2>/dev/null; then
+    local expected actual
+    expected="$(awk '{print $1}' "${target}.sha256.tmp" | head -n1)"
+    actual="$(sha256sum "${target}.tmp" | awk '{print $1}')"
+    rm -f "${target}.sha256.tmp"
+
+    if [[ -z "$expected" || "$expected" != "$actual" ]]; then
+      wrong "Checksum verification FAILED. Refusing to run the downloaded update."
+      wrong "Expected: ${expected:-<none>}  Actual: ${actual}"
       rm -f "${target}.tmp"
       confirm
       return
     fi
     success "Checksum verified."
   else
-    warn "No checksum file found upstream; skipping integrity verification."
+    warn "No checksum file found at ${checksum_url} — skipping integrity check."
+    warn "Consider publishing a .sha256 alongside releases for verified updates."
   fi
 
   mv "${target}.tmp" "$target"
-  chmod +x "$target"
+  chmod 700 "$target"
   success "NovaBackuper updated at: $target"
   print ""
   print "Restarting with the new version..."
@@ -1044,7 +1038,16 @@ FORCE_RUN="${FORCE_RUN:-0}"
 backup_base="/root/${timestamp}_${REMARK}${TAG}"
 backup_name="/root/${timestamp}_${REMARK}${BACKUP_SUFFIX}"
 
-log()   { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+LOG_DIR="/var/log/novabackuper"
+LOG_FILE="${LOG_DIR}/${REMARK}.log"
+mkdir -p "$LOG_DIR" 2>/dev/null || true
+
+log() {
+  local line
+  line="[$(date '+%Y-%m-%d %H:%M:%S')] $*"
+  echo "$line"
+  echo "$line" >> "$LOG_FILE" 2>/dev/null || true
+}
 
 STATE_DIR="/var/lib/novabackuper"
 LAST_RUN_FILE="${STATE_DIR}/${REMARK}.last_run"
@@ -1085,9 +1088,10 @@ acquire_lock() {
 
 acquire_lock || exit 0
 
-if ! should_run_now; then
-  rc=$?
-  exit "$rc"
+should_run_now
+run_rc=$?
+if [ "$run_rc" -ne 0 ]; then
+  exit "$run_rc"
 fi
 
 # Build caption dynamically at runtime
@@ -1131,7 +1135,6 @@ if [ "${#db_files[@]}" -eq 0 ]; then
   exit 1
 fi
 
-log "Creating backup archive: ${backup_name}"
 log "Including files:"
 printf '  - %s\n' "${db_files[@]}"
 
@@ -1140,34 +1143,34 @@ if [[ "${ENCRYPT_ENABLED}" == "yes" ]]; then
   if [[ "${ENCRYPT_TOOL}" == "7z" ]]; then
     # 7z produces a single encrypted archive; split afterwards if needed
     local_archive="/root/${timestamp}_${REMARK}${TAG}enc.7z"
-    if ! 7z a -mhe=on -mx=9 "-p${ENCRYPT_PASSWORD}" "$local_archive" "${db_files[@]}" >/dev/null; then
+    log "Creating encrypted archive (7z): ${local_archive}"
+    if ! 7z a -mhe=on -mx=9 "-p${ENCRYPT_PASSWORD}" "$local_archive" "${db_files[@]}"; then
       log "Failed to create encrypted 7z archive. Aborting."
       exit 1
     fi
-    chmod 600 "$local_archive"
     # For Telegram multi-part support, split with zip-style naming using split
     # We use the 7z archive directly (single file, typically small for x-ui db)
     backup_files=( "$local_archive" )
   else
     # zip -e fallback (password-protected zip)
     enc_zip="/root/${timestamp}_${REMARK}${TAG}enc.zip"
-    if ! zip -9 -e --password "${ENCRYPT_PASSWORD}" "$enc_zip" "${db_files[@]}" >/dev/null; then
+    log "Creating encrypted archive (zip): ${enc_zip}"
+    if ! zip -9 -e --password "${ENCRYPT_PASSWORD}" "$enc_zip" "${db_files[@]}"; then
       log "Failed to create encrypted zip archive. Aborting."
       exit 1
     fi
-    chmod 600 "$enc_zip"
     backup_files=( "$enc_zip" )
   fi
 else
   # Plain zip with split support
-  if ! zip -9 -r -s "${SPLIT_SIZE}" "$backup_name" "${db_files[@]}" >/dev/null; then
+  log "Creating backup archive: ${backup_name}"
+  if ! zip -9 -r -s "${SPLIT_SIZE}" "$backup_name" "${db_files[@]}"; then
     log "Failed to compress ${REMARK} files. Please check the server."
     exit 1
   fi
   shopt -s nullglob
   backup_files=( "${backup_base}"* )
   shopt -u nullglob
-  chmod 600 "${backup_files[@]}" 2>/dev/null || true
 fi
 
 if [ "${#backup_files[@]}" -eq 0 ]; then
@@ -1233,7 +1236,6 @@ copy_to_local() {
     log "Failed to copy backup to ${LOCAL_DEST_PATH}. Aborting."
     exit 1
   fi
-  chmod 600 "${LOCAL_DEST_PATH}/$(basename "$FILE")" 2>/dev/null || true
   log "File copied: ${LOCAL_DEST_PATH}/$(basename "$FILE")"
 }
 
@@ -1288,11 +1290,13 @@ EOL
     -e "s|__INTERVAL_MINUTES__|$(sed_escape "${INTERVAL_MINUTES}")|g" \
     "$BACKUP_PATH"
 
-  # Lock down the generated script immediately: it now contains the
-  # Telegram bot token and (if enabled) the encryption password in
-  # plaintext, so it must never be world- or group-readable.
-  chmod 600 "$BACKUP_PATH"
-  success "Backup script created: $BACKUP_PATH (permissions locked to 600)"
+  # 700: owner-only read/write/execute. Keeps the embedded Telegram token and
+  # encryption password unreadable to other local users, while still leaving
+  # the script executable so cron can invoke it directly by path. (600 alone
+  # would silently break cron: it can run "bash script.sh" in the foreground,
+  # but crontab entries execute the path directly and need the +x bit.)
+  chmod 700 "$BACKUP_PATH"
+  success "Backup script created: $BACKUP_PATH (permissions locked to 700 — owner-only, still executable)"
 
   log "Running the backup script for the first time..."
 
@@ -1625,8 +1629,6 @@ silent_edit() {
     echo "[INFO] Encryption settings updated."
     changed=1
   fi
-
-  chmod 600 "$script" 2>/dev/null || true
 
   if [[ "$changed" -eq 0 ]]; then
     echo "[WARN] No changes specified. Use --help for available flags."
