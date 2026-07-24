@@ -23,27 +23,75 @@ readonly SPLIT_SIZE="49m"   # per-part size for zip split
 #           ANSI color codes          #
 #######################################
 
-declare -A COLORS=(
-  [red]='\033[1;31m'      [pink]='\033[1;35m' 
-  [green]='\033[1;92m'    [spring]='\033[38;5;46m'
-  [orange]='\033[1;38;5;208m' [cyan]='\033[1;36m'
-  [reset]='\033[0m'
+declare -A C=(
+  [r]='\033[1;31m'   [g]='\033[1;92m'
+  [b]='\033[1;34m'   [c]='\033[1;36m'
+  [m]='\033[1;35m'   [y]='\033[1;33m'
+  [o]='\033[1;38;5;208m' [w]='\033[1;37m'
+  [d]='\033[2;37m'   [u]='\033[4m'
+  [reset]='\033[0m'  [bold]='\033[1m'
+  [dim]='\033[2m'    [inv]='\033[7m'
+  [green]='\033[1;92m'
 )
+
+# Box-drawing characters
+readonly BOX_TL="┌" BOX_TR="┐" BOX_BL="└" BOX_BR="┘"
+readonly BOX_H="─" BOX_V="│"
+readonly BOX_T="├" BOX_B="┤"
 
 #######################################
 #       Logging & helper functions    #
 #######################################
 
-print()   { echo -e "${COLORS[cyan]}$*${COLORS[reset]}"; }
-log()     { echo -e "${COLORS[cyan]}[INFO]${COLORS[reset]} $*"; }
-warn()    { echo -e "${COLORS[orange]}[WARN]${COLORS[reset]} $*" >&2; }
-error()   { echo -e "${COLORS[red]}[ERROR]${COLORS[reset]} $*" >&2; exit 1; }
-wrong()   { echo -e "${COLORS[red]}[WRONG]${COLORS[reset]} $*" >&2; }
-success() { echo -e "${COLORS[spring]}${COLORS[green]}[SUCCESS]${COLORS[reset]} $*"; }
+# Print a horizontal rule
+hr()   { echo -e "${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${C[reset]}"; }
 
-input()   { read -p "$(echo -e "${COLORS[orange]}▶ $1${COLORS[reset]} ")" "$2"; }
-input_secret() { read -s -p "$(echo -e "${COLORS[orange]}▶ $1${COLORS[reset]} ")" "$2"; echo; }
-confirm() { read -p "$(echo -e "${COLORS[pink]}Press any key to continue...${COLORS[reset]}")"; }
+# Section title
+title() {
+  local label="$*"
+  local pad=$(( (48 - ${#label}) / 2 ))
+  (( pad < 0 )) && pad=0
+  local line=""
+  for (( i=0; i<pad; i++ )); do line+=" "; done
+  echo -e "${C[c]}${C[b]}${line}${label}${C[reset]}"
+}
+
+# Compact box around text
+box() {
+  local text="$*"
+  local len=${#text}
+  local border=""
+  for (( i=0; i<len+2; i++ )); do border+="${BOX_H}"; done
+  echo -e "${C[d]}${BOX_TL}${border}${BOX_TR}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]} ${C[w]}${text}${C[reset]} ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_BL}${border}${BOX_BR}${C[reset]}"
+}
+
+# Inline menu item
+item() {
+  local num="$1" desc="$2"
+  echo -e "  ${C[d]}${BOX_V}${C[reset]}  ${C[c]}${num}${C[reset]} ${C[d]}│${C[reset]} ${C[w]}${desc}${C[reset]}"
+}
+
+# Menu with box border
+menu_header() {
+  echo -e "${C[d]}${BOX_TL}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_TR}${C[reset]}"
+}
+
+menu_footer() {
+  echo -e "${C[d]}${BOX_BL}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_BR}${C[reset]}"
+}
+
+log()     { echo -e "  ${C[c]}${BOX_V}${C[reset]} ${C[c]}i${C[reset]}  $*"; }
+warn()    { echo -e "  ${C[c]}${BOX_V}${C[reset]} ${C[y]}!${C[reset]}  $*" >&2; }
+error()   { echo -e "  ${C[c]}${BOX_V}${C[reset]} ${C[r]}✗${C[reset]}  $*" >&2; exit 1; }
+wrong()   { echo -e "  ${C[c]}${BOX_V}${C[reset]} ${C[r]}✗${C[reset]}  $*" >&2; }
+success() { echo -e "  ${C[c]}${BOX_V}${C[reset]} ${C[g]}✓${C[reset]}  $*"; }
+print()   { echo -e "  ${C[d]}${BOX_V}${C[reset]} $*"; }
+
+input()       { read -p "$(echo -e "  ${C[o]}▸${C[reset]} ${C[o]}$1${C[reset]} ")" "$2"; }
+input_secret(){ read -s -p "$(echo -e "  ${C[o]}▸${C[reset]} ${C[o]}$1${C[reset]} ")" "$2"; echo; }
+confirm()     { read -p "$(echo -e "  ${C[m]}▸${C[reset]} ${C[m]}Press [Enter] to continue...${C[reset]}")"; }
 
 trap 'error "Unexpected error at line ${LINENO}: ${BASH_COMMAND}"' ERR
 
@@ -159,22 +207,26 @@ menu() {
 
   while true; do
     clear
-    print "======== ${PROJECT_NAME} Menu [${VERSION}] ========"
-    print ""
-    print "0) Update OS packages (optional)"
-    print "1) Install NovaBackuper for x-ui"
-    print "2) Edit existing backup"
-    print "3) Update NovaBackuper"
-    print "4) Remove all NovaBackuper scripts"
-    print "5) Run all NovaBackuper backup scripts"
-    print "6) Exit"
-    print ""
+    menu_header
+    echo -e "${C[d]}${BOX_V}${C[reset]}          ${C[c]}${PROJECT_NAME}${C[reset]} ${C[d]}${BOX_V}${C[reset]}           ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}          ${C[d]}${VERSION}${C[reset]}          ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_T}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}1${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Install NovaBackuper for x-ui${C[reset]}${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}2${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Edit existing backup${C[reset]}         ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}3${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Update NovaBackuper${C[reset]}            ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}4${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Remove all backup scripts${C[reset]}    ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}5${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Run all backup scripts${C[reset]}        ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}6${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Update OS packages${C[reset]}           ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[r]}0${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Exit${C[reset]}                            ${C[d]}${BOX_V}${C[reset]}"
+    menu_footer
+    echo ""
     input "Choose an option:" choice
 
     case $choice in
       0)
-        update_os
-        confirm
+        print "Thank you for using ${PROJECT_NAME} by ${OWNER}. Goodbye!"
+        exit 0
         ;;
       1)
         start_backup
@@ -192,8 +244,8 @@ menu() {
         run_all_backup_scripts
         ;;
       6)
-        print "Thank you for using ${PROJECT_NAME} by ${OWNER}. Goodbye!"
-        exit 0
+        update_os
+        confirm
         ;;
       *)
         wrong "Invalid option, please select a valid number!"
@@ -203,7 +255,13 @@ menu() {
 }
 
 cleanup_backups() {
-  print "Removing all NovaBackuper scripts and related backup files..."
+  clear
+  menu_header
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[r]}REMOVE ALL SCRIPTS${C[reset]}                            ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[d]}${BOX_V}${C[reset]}  ${C[w]}This will delete all backup${C[reset]}            ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[d]}${BOX_V}${C[reset]}  ${C[w]}scripts and cron jobs.${C[reset]}                ${C[d]}${BOX_V}${C[reset]}"
+  menu_footer
+  echo ""
 
   rm -rf /root/*"$SCRIPT_SUFFIX" /root/*"$TAG"* /root/*_backuper.sh
 
@@ -217,6 +275,13 @@ run_all_backup_scripts() {
   local failed=0
   local skipped=0
   local succeeded=0
+
+  clear
+  menu_header
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[c]}RUN ALL BACKUPS${C[reset]}                              ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[d]}${BOX_V}${C[reset]}  ${C[w]}Executing all backup scripts${C[reset]}           ${C[d]}${BOX_V}${C[reset]}"
+  menu_footer
+  echo ""
 
   if compgen -G "/root/*${SCRIPT_SUFFIX}" > /dev/null; then
     for script in /root/*${SCRIPT_SUFFIX}; do
@@ -259,7 +324,10 @@ run_all_backup_scripts() {
 
 edit_backup() {
   clear
-  print "[EDIT EXISTING BACKUP]\n"
+  menu_header
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[c]}EDIT EXISTING BACKUP${C[reset]}                       ${C[d]}${BOX_V}${C[reset]}"
+  menu_footer
+  echo ""
 
   local scripts=()
   local path
@@ -275,17 +343,17 @@ edit_backup() {
     return
   fi
 
-  print "Available backup scripts:\n"
+  print "Available backup scripts:"
+  echo ""
   local idx
   for idx in "${!scripts[@]}"; do
     local base remark
     base=$(basename "${scripts[$idx]}")
     remark=${base#_}
     remark=${remark%"$SCRIPT_SUFFIX"}
-    printf "  %d) %s (remark: %s)\n" "$((idx + 1))" "$base" "$remark"
+    echo -e "  ${C[d]}${BOX_V}${C[reset]}  ${C[c]}$((idx + 1))${C[reset]} ${C[d]}│${C[reset]} ${C[w]}${remark}${C[reset]} ${C[d]}${base}${C[reset]}  ${C[d]}${BOX_V}${C[reset]}"
   done
-
-  echo
+  echo ""
   local choice
   while true; do
     input "Select a script to edit (1-${#scripts[@]}): " choice
@@ -319,9 +387,6 @@ _profile_editor() {
   local script="$1"
 
   while true; do
-    clear
-    print "[PROFILE EDITOR: $(basename "$script")]\n"
-
     # Read current values for display
     local cur_remark cur_interval cur_tz cur_tg_token cur_tg_chat cur_tg_topic
     local cur_dest cur_local_path cur_encrypt cur_enc_password
@@ -335,19 +400,24 @@ _profile_editor() {
     cur_local_path=$(_read_script_value "$script" "LOCAL_DEST_PATH")
     cur_encrypt=$(_read_script_value "$script" "ENCRYPT_ENABLED")
 
-    print "Current profile: ${cur_remark}"
-    print ""
-    print "1) Change Remark          [${cur_remark}]"
-    print "2) Change Interval        [${cur_interval} min]"
-    print "3) Change Timezone        [${cur_tz}]"
-    print "4) Change Telegram Settings"
-    print "5) Change Backup Destination  [${cur_dest:-telegram}]"
-    print "6) Change Encryption Settings [${cur_encrypt:-no}]"
-    print "7) Save"
-    print "8) Cancel"
-    print ""
-
-    local opt
+    clear
+    menu_header
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[c]}PROFILE EDITOR${C[reset]}                           ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[d]}$(basename "$script")${C[reset]}                          ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_T}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[w]}Current profile: ${C[c]}${cur_remark}${C[reset]}                ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}1${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Remark${C[reset]}       ${C[d]}[ ${C[c]}${cur_remark}${C[d]} ]${C[reset]}  ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}2${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Interval${C[reset]}     ${C[d]}[ ${C[c]}${cur_interval} min${C[d]} ]${C[reset]}  ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}3${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Timezone${C[reset]}     ${C[d]}[ ${C[c]}${cur_tz}${C[d]} ]${C[reset]}  ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}4${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Telegram Settings${C[reset]}      ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}5${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Destination${C[reset]}  ${C[d]}[ ${C[c]}${cur_dest:-telegram}${C[d]} ]${C[reset]}  ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}6${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Encryption${C[reset]}   ${C[d]}[ ${C[c]}${cur_encrypt:-no}${C[d]} ]${C[reset]}  ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}7${C[reset]} ${C[d]}│${C[reset]} ${C[g]}Save${C[reset]}                                   ${C[d]}${BOX_V}${C[reset]}"
+    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[r]}8${C[reset]} ${C[d]}│${C[reset]} ${C[r]}Cancel${C[reset]}                                 ${C[d]}${BOX_V}${C[reset]}"
+    menu_footer
+    echo ""
     input "Choose an option:" opt
 
     case "$opt" in
@@ -468,7 +538,13 @@ _edit_timezone() {
 _edit_telegram() {
   local script="$1"
 
-  print "\n[TELEGRAM SETTINGS]\n"
+  echo ""
+  menu_header
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[c]}TELEGRAM SETTINGS${C[reset]}                           ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[d]}${BOX_V}${C[reset]}  ${C[w]}Bot token, Chat ID, Topic ID${C[reset]}          ${C[d]}${BOX_V}${C[reset]}"
+  menu_footer
+  echo ""
 
   # Token
   local new_token
@@ -542,11 +618,15 @@ _edit_telegram() {
 _edit_destination() {
   local script="$1"
 
-  print "\n[BACKUP DESTINATION]\n"
-  print "1) Telegram"
-  print "2) Local Folder"
-  print "3) Telegram + Local Folder"
-  print ""
+  echo ""
+  menu_header
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[c]}BACKUP DESTINATION${C[reset]}                         ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}1${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Telegram${C[reset]}                            ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}2${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Local Folder${C[reset]}                        ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}3${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Telegram + Local Folder${C[reset]}            ${C[d]}${BOX_V}${C[reset]}"
+  menu_footer
+  echo ""
 
   local dchoice
   while true; do
@@ -584,10 +664,14 @@ _edit_destination() {
 _edit_encryption() {
   local script="$1"
 
-  print "\n[ENCRYPTION SETTINGS]\n"
-  print "1) No"
-  print "2) Yes"
-  print ""
+  echo ""
+  menu_header
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[c]}ENCRYPTION SETTINGS${C[reset]}                         ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}1${C[reset]} ${C[d]}│${C[reset]} ${C[w]}No${C[reset]}                                   ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}2${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Yes${C[reset]}                                  ${C[d]}${BOX_V}${C[reset]}"
+  menu_footer
+  echo ""
 
   local echoice
   while true; do
@@ -629,7 +713,10 @@ _edit_encryption() {
 
 update_novabackuper() {
   clear
-  print "[UPDATE]\n"
+  menu_header
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[c]}UPDATE${C[reset]}                                  ${C[d]}${BOX_V}${C[reset]}"
+  menu_footer
+  echo ""
 
   local url="https://github.com/power0matin/NovaBackuper/raw/master/nova-backuper.sh"
   local checksum_url="${url}.sha256"
@@ -688,8 +775,13 @@ start_backup() {
 
 generate_remark() {
   clear
-  print "[REMARK]\n"
-  print "We need a remark for the backup file (e.g., main, panel, prod_xui).\n"
+  menu_header
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[c]}STEP 1/5 - REMARK${C[reset]}                            ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[d]}${BOX_V}${C[reset]}  ${C[w]}Backup file name identifier${C[reset]}           ${C[d]}${BOX_V}${C[reset]}"
+  menu_footer
+  echo ""
+  print "e.g., main, panel, prod_xui"
+  echo ""
 
   while true; do
     input "Enter a remark: " REMARK
@@ -710,9 +802,13 @@ generate_remark() {
 
 generate_timer() {
   clear
-  print "[TIMER]\n"
-  print "Enter a time interval in minutes for sending backups."
-  print "We will use a safe cron schedule + an internal interval gate for exact timing.\n"
+  menu_header
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[c]}STEP 2/5 - TIMER${C[reset]}                             ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[d]}${BOX_V}${C[reset]}  ${C[w]}Backup interval in minutes${C[reset]}           ${C[d]}${BOX_V}${C[reset]}"
+  menu_footer
+  echo ""
+  print "Safe cron schedule + internal interval gate for exact timing."
+  echo ""
 
   while true; do
     input "Enter the number of minutes (1-1440): " minutes
@@ -744,18 +840,23 @@ generate_timer() {
 
 check_xui() {
   clear
-  print "[X-UI PATH CHECK]\n"
+  menu_header
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[c]}STEP 3/5 - X-UI PATH CHECK${C[reset]}                   ${C[d]}${BOX_V}${C[reset]}"
+  menu_footer
+  echo ""
 
   local XUI_DB_FOLDER="/etc/x-ui"
 
   if [ ! -d "$XUI_DB_FOLDER" ]; then
-    error "Directory not found: $XUI_DB_FOLDER
-
-Please make sure x-ui is installed and its config directory is /etc/x-ui."
+    echo ""
+    echo -e "  ${C[r]}Directory not found: ${XUI_DB_FOLDER}${C[reset]}"
+    echo -e "  ${C[d]}Make sure x-ui is installed and config is /etc/x-ui${C[reset]}"
+    echo ""
+    error "Aborting."
   fi
 
   if [ ! -f "${XUI_DB_FOLDER}/x-ui.db" ]; then
-    error "x-ui.db not found in $XUI_DB_FOLDER. Aborting."
+    error "x-ui.db not found in $XUI_DB_FOLDER"
   fi
 
   success "x-ui directory detected: $XUI_DB_FOLDER"
@@ -766,11 +867,14 @@ Please make sure x-ui is installed and its config directory is /etc/x-ui."
 # Unified destination + telegram wizard
 telegram_or_destination_progress() {
   clear
-  print "[BACKUP DESTINATION]\n"
-  print "1) Telegram"
-  print "2) Local Folder"
-  print "3) Telegram + Local Folder"
-  print ""
+  menu_header
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[c]}STEP 4/5 - BACKUP DESTINATION${C[reset]}               ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}1${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Telegram${C[reset]}                            ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}2${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Local Folder${C[reset]}                        ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}3${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Telegram + Local Folder${C[reset]}            ${C[d]}${BOX_V}${C[reset]}"
+  menu_footer
+  echo ""
 
   local dchoice
   while true; do
@@ -819,7 +923,10 @@ telegram_or_destination_progress() {
 
 _ask_timezone() {
   clear
-  print "[TIMEZONE]\n"
+  menu_header
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[c]}TIMEZONE${C[reset]}                                  ${C[d]}${BOX_V}${C[reset]}"
+  menu_footer
+  echo ""
 
   local default_tz="$TIMEZONE"
   while true; do
@@ -839,8 +946,11 @@ _ask_timezone() {
 
 telegram_progress() {
   clear
-  print "[TELEGRAM CONFIG]\n"
-  print "To use Telegram, you need to provide a bot token and a chat ID.\n"
+  menu_header
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[c]}STEP 5/5 - TELEGRAM CONFIG${C[reset]}                  ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[d]}${BOX_V}${C[reset]}  ${C[w]}Bot token, Chat ID, Topic ID${C[reset]}          ${C[d]}${BOX_V}${C[reset]}"
+  menu_footer
+  echo ""
 
   while true; do
     # Get bot token
@@ -940,11 +1050,14 @@ telegram_progress() {
 
 ask_encryption() {
   clear
-  print "[ENCRYPTION]\n"
-  print "Enable backup encryption?\n"
-  print "1) No"
-  print "2) Yes"
-  print ""
+  menu_header
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[c]}ENCRYPTION${C[reset]}                                ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[d]}${BOX_V}${C[reset]}  ${C[w]}Enable backup encryption?${C[reset]}            ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}1${C[reset]} ${C[d]}│${C[reset]} ${C[w]}No${C[reset]}                                   ${C[d]}${BOX_V}${C[reset]}"
+  echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[g]}2${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Yes${C[reset]}                                  ${C[d]}${BOX_V}${C[reset]}"
+  menu_footer
+  echo ""
 
   local echoice
   while true; do
@@ -1768,8 +1881,12 @@ main() {
     run_cli
   else
     clear
-    print "${PROJECT_NAME} [${VERSION}] by ${OWNER}"
-    print ""
+    echo ""
+    echo -e "${C[c]}╔══════════════════════════════════════════════════╗${C[reset]}"
+    echo -e "${C[c]}║${C[reset]}   ${C[w]}${PROJECT_NAME}${C[reset]} ${C[d]}${VERSION}${C[reset]}                                ${C[c]}║${C[reset]}"
+    echo -e "${C[c]}║${C[reset]}   ${C[d]}by ${OWNER}${C[reset]}                              ${C[c]}║${C[reset]}"
+    echo -e "${C[c]}╚══════════════════════════════════════════════════╝${C[reset]}"
+    echo ""
     check_root
     menu
   fi
