@@ -4,6 +4,16 @@
 
 # NovaBackuper
 
+<!-- repo-badges:start -->
+<p align="center">
+  <a href="https://hits.sh/github.com/power0matin/NovaBackuper/"><img src="https://hits.sh/github.com/power0matin/NovaBackuper.svg?style=flat-square&amp;label=Views&amp;labelColor=18181B&amp;color=0EA5E9&amp;logo=github" alt="Repository Views"/></a>
+  <a href="https://github.com/power0matin/NovaBackuper/stargazers"><img src="https://img.shields.io/github/stars/power0matin/NovaBackuper?style=flat-square&amp;label=Stars&amp;labelColor=18181B&amp;color=F59E0B&amp;logo=github&amp;logoColor=white" alt="GitHub Stars"/></a>
+  <a href="https://github.com/power0matin/NovaBackuper/forks"><img src="https://img.shields.io/github/forks/power0matin/NovaBackuper?style=flat-square&amp;label=Forks&amp;labelColor=18181B&amp;color=6366F1&amp;logo=github&amp;logoColor=white" alt="GitHub Forks"/></a>
+  <a href="https://github.com/power0matin/NovaBackuper/issues"><img src="https://img.shields.io/github/issues/power0matin/NovaBackuper?style=flat-square&amp;label=Issues&amp;labelColor=18181B&amp;color=22C55E&amp;logo=github&amp;logoColor=white" alt="GitHub Issues"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/power0matin/NovaBackuper?style=flat-square&amp;label=License&amp;labelColor=18181B&amp;color=EF4444&amp;logo=github&amp;logoColor=white" alt="GitHub License"/></a>
+</p>
+<!-- repo-badges:end -->
+
 **NovaBackuper** is a lightweight, opinionated backup assistant focused on **x-ui** panels.
 It generates compressed, timestamped backups of your x-ui database and ships them straight to a **Telegram** chat or a **local folder** — fully automated, with cron integration, optional AES-256 encryption, and a full CLI for scripted deployments.
 
