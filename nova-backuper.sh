@@ -61,27 +61,47 @@ visible_text() {
 }
 
 ui_row() {
-  local text="$1" clean len pad_count pad
+  local text="$1" clean width_clean len pad_count pad
   clean=$(visible_text "$text")
-  # Bash may count UTF-8 box-drawing characters as multiple bytes under C locale.
-  # The TUI uses single-column box glyphs, so normalize them for width math.
-  local width_clean=${clean//│/x}
+  width_clean=${clean//│/x}
   len=${#width_clean}
 
-  if (( len > UI_WIDTH )); then
-    # Keep the frame intact if a future label is too long.
-    text="${clean:0:UI_WIDTH}"
-    len=$UI_WIDTH
+  # Render normally when the row fits; otherwise wrap on word boundaries.
+  if (( len <= UI_WIDTH )); then
+    pad_count=$((UI_WIDTH - len))
+    printf -v pad "%*s" "$pad_count" ""
+    printf "%b" "${C[d]}${BOX_V}${C[reset]}"
+    printf "%b" "$text"
+    printf "%s" "$pad"
+    printf "%b\n" "${C[d]}${BOX_V}${C[reset]}"
+    return 0
   fi
 
-  pad_count=$((UI_WIDTH - len))
-  printf -v pad '%*s' "$pad_count" ''
-  printf '%b' "${C[d]}${BOX_V}${C[reset]}"
-  printf '%b' "$text"
-  printf '%s' "$pad"
-  printf '%b\n' "${C[d]}${BOX_V}${C[reset]}"
-}
+  local remainder="$clean" candidate line split_len
+  while :; do
+    width_clean=${remainder//│/x}
+    len=${#width_clean}
+    if (( len <= UI_WIDTH )); then
+      ui_row "$remainder"
+      break
+    fi
 
+    candidate=${remainder:0:UI_WIDTH}
+    line=${candidate% *}
+    if [[ -z "$line" ]]; then
+      line="$candidate"
+      split_len=$UI_WIDTH
+    else
+      split_len=${#line}
+    fi
+
+    ui_row "$line"
+    remainder="${remainder:$split_len}"
+    while [[ "$remainder" == [[:space:]]* ]]; do
+      remainder="${remainder:1}"
+    done
+  done
+}
 ui_title() {
   local text="$*" clean len left right
   clean=$(visible_text "$text")
@@ -112,6 +132,11 @@ ui_separator() {
   printf '%b%s%s%b\n' \
     "${C[d]}${BOX_T}" "$(repeat_char "$UI_WIDTH" "$BOX_H")" \
     "${BOX_B}" "${C[reset]}"
+}
+ui_inner_separator() {
+  printf '%b%s%s%b\n' \
+    "${C[d]}${BOX_V}" "$(repeat_char "$UI_WIDTH" "$BOX_H")" \
+    "${BOX_V}" "${C[reset]}"
 }
 
 # Print a horizontal rule matching the UI width.
@@ -162,6 +187,22 @@ print()   { echo -e "  ${C[d]}${BOX_V}${C[reset]} $*"; }
 input()       { read -p "$(echo -e "  ${C[o]}▸${C[reset]} ${C[o]}$1${C[reset]} ")" "$2"; }
 input_secret(){ read -s -p "$(echo -e "  ${C[o]}▸${C[reset]} ${C[o]}$1${C[reset]} ")" "$2"; echo; }
 confirm()     { read -p "$(echo -e "  ${C[m]}▸${C[reset]} ${C[m]}Press [Enter] to continue...${C[reset]}")"; }
+confirm_delete() {
+  # Explicit CLI --remove stays non-interactive; the interactive UI requires DELETE.
+  if [[ "${SILENT_MODE:-0}" -eq 1 || "${CLI_ACTION:-}" == "remove" ]]; then
+    return 0
+  fi
+
+  local answer
+  printf '  %b▸%b %bType DELETE to confirm removal: %b' "${C[m]}" "${C[reset]}" "${C[m]}" "${C[reset]}"
+  IFS= read -r answer
+  if [[ "$answer" == "DELETE" ]]; then
+    return 0
+  fi
+
+  warn "Removal cancelled. Nothing was deleted."
+  return 1
+}
 
 #######################################
 #           System utilities          #
@@ -324,15 +365,31 @@ menu() {
 cleanup_backups() {
   clear
   menu_header
-  ui_row "  ${C[r]}REMOVE ALL SCRIPTS${C[reset]}                            "
-  ui_row "  ${C[d]}${BOX_V}${C[reset]}  ${C[w]}This will delete all backup${C[reset]}            "
-  ui_row "  ${C[d]}${BOX_V}${C[reset]}  ${C[w]}scripts and cron jobs.${C[reset]}                "
+  ui_row "  ${C[r]}REMOVE ALL SCRIPTS${C[reset]}"
+  ui_row "  ${C[w]}This will delete all NovaBackuper backup scripts and matching cron jobs."
+  ui_row "  ${C[y]}This action cannot be undone."
   menu_footer
   echo ""
 
-  rm -rf /root/*"$SCRIPT_SUFFIX" /root/*"$TAG"* /root/*_backuper.sh
+  if ! confirm_delete; then
+    sleep 1
+    return 0
+  fi
 
-  crontab -l 2>/dev/null | grep -v "$SCRIPT_SUFFIX" | crontab - || true
+  shopt -s nullglob
+  local path
+  local -a targets=(
+    /root/*"${SCRIPT_SUFFIX}"
+    /root/*"${TAG}"*
+    /root/*_backuper.sh
+  )
+  for path in "${targets[@]}"; do
+    [[ -f "$path" ]] || continue
+    rm -f -- "$path"
+  done
+  shopt -u nullglob
+
+  crontab -l 2>/dev/null | grep -vF "$SCRIPT_SUFFIX" | crontab - || true
 
   success "All NovaBackuper scripts and cron jobs have been removed."
   sleep 1
@@ -354,8 +411,11 @@ run_all_backup_scripts() {
     for script in /root/*${SCRIPT_SUFFIX}; do
       log "Running backup script: $script"
 
-      bash "$script"
-      rc=$?
+      if bash "$script"; then
+        rc=0
+      else
+        rc=$?
+      fi
 
       if [ "$rc" -eq 0 ]; then
         succeeded=$((succeeded + 1))
@@ -418,7 +478,7 @@ edit_backup() {
     base=$(basename "${scripts[$idx]}")
     remark=${base#_}
     remark=${remark%"$SCRIPT_SUFFIX"}
-    echo -e "  ${C[d]}${BOX_V}${C[reset]}  ${C[c]}$((idx + 1))${C[reset]} ${C[d]}│${C[reset]} ${C[w]}${remark}${C[reset]} ${C[d]}${base}${C[reset]}  ${C[d]}${BOX_V}${C[reset]}"
+    item "$((idx + 1))" "${remark} ${base}"
   done
   echo ""
   local choice
@@ -473,14 +533,14 @@ _profile_editor() {
     ui_row "  ${C[d]}$(basename "$script")${C[reset]}                          "
     ui_separator
     ui_row "  ${C[w]}Current profile: ${C[c]}${cur_remark}${C[reset]}                "
-    echo -e "${C[d]}${BOX_V}${C[reset]}  ${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_V}${C[reset]}"
+    ui_inner_separator
     ui_row "  ${C[g]}1${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Remark${C[reset]}       ${C[d]}[ ${C[c]}${cur_remark}${C[d]} ]${C[reset]}  "
     ui_row "  ${C[g]}2${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Interval${C[reset]}     ${C[d]}[ ${C[c]}${cur_interval} min${C[d]} ]${C[reset]}  "
     ui_row "  ${C[g]}3${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Timezone${C[reset]}     ${C[d]}[ ${C[c]}${cur_tz}${C[d]} ]${C[reset]}  "
     ui_row "  ${C[g]}4${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Telegram Settings${C[reset]}      "
     ui_row "  ${C[g]}5${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Destination${C[reset]}  ${C[d]}[ ${C[c]}${cur_dest:-telegram}${C[d]} ]${C[reset]}  "
     ui_row "  ${C[g]}6${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Encryption${C[reset]}   ${C[d]}[ ${C[c]}${cur_encrypt:-no}${C[d]} ]${C[reset]}  "
-    echo -e "${C[d]}${BOX_V}${C[reset]}${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
+    ui_separator
     ui_row "  ${C[g]}7${C[reset]} ${C[d]}│${C[reset]} ${C[g]}Save${C[reset]}                                   "
     ui_row "  ${C[r]}8${C[reset]} ${C[d]}│${C[reset]} ${C[r]}Cancel${C[reset]}                                 "
     menu_footer
@@ -608,7 +668,7 @@ _edit_telegram() {
   echo ""
   menu_header
   ui_row "  ${C[c]}TELEGRAM SETTINGS${C[reset]}                           "
-  echo -e "${C[d]}${BOX_V}${C[reset]}${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
+  ui_separator
   ui_row "  ${C[d]}${BOX_V}${C[reset]}  ${C[w]}Bot token, Chat ID, Topic ID${C[reset]}          "
   menu_footer
   echo ""
@@ -688,7 +748,7 @@ _edit_destination() {
   echo ""
   menu_header
   ui_row "  ${C[c]}BACKUP DESTINATION${C[reset]}                         "
-  echo -e "${C[d]}${BOX_V}${C[reset]}${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
+  ui_separator
   ui_row "  ${C[g]}1${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Telegram${C[reset]}                            "
   ui_row "  ${C[g]}2${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Local Folder${C[reset]}                        "
   ui_row "  ${C[g]}3${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Telegram + Local Folder${C[reset]}            "
@@ -734,7 +794,7 @@ _edit_encryption() {
   echo ""
   menu_header
   ui_row "  ${C[c]}ENCRYPTION SETTINGS${C[reset]}                         "
-  echo -e "${C[d]}${BOX_V}${C[reset]}${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
+  ui_separator
   ui_row "  ${C[g]}1${C[reset]} ${C[d]}│${C[reset]} ${C[w]}No${C[reset]}                                   "
   ui_row "  ${C[g]}2${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Yes${C[reset]}                                  "
   menu_footer
@@ -936,7 +996,7 @@ telegram_or_destination_progress() {
   clear
   menu_header
   ui_row "  ${C[c]}STEP 4/5 - BACKUP DESTINATION${C[reset]}               "
-  echo -e "${C[d]}${BOX_V}${C[reset]}${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
+  ui_separator
   ui_row "  ${C[g]}1${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Telegram${C[reset]}                            "
   ui_row "  ${C[g]}2${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Local Folder${C[reset]}                        "
   ui_row "  ${C[g]}3${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Telegram + Local Folder${C[reset]}            "
@@ -1120,7 +1180,7 @@ ask_encryption() {
   menu_header
   ui_row "  ${C[c]}ENCRYPTION${C[reset]}                                "
   ui_row "  ${C[d]}${BOX_V}${C[reset]}  ${C[w]}Enable backup encryption?${C[reset]}            "
-  echo -e "${C[d]}${BOX_V}${C[reset]}${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
+  ui_separator
   ui_row "  ${C[g]}1${C[reset]} ${C[d]}│${C[reset]} ${C[w]}No${C[reset]}                                   "
   ui_row "  ${C[g]}2${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Yes${C[reset]}                                  "
   menu_footer
