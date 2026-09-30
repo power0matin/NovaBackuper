@@ -262,6 +262,149 @@ require_encrypt_tool() {
 }
 
 #######################################
+#       Telegram SOCKS5 proxy         #
+#######################################
+
+# Only socks5:// proxies are accepted:  socks5://USER:PASS@HOST:PORT
+#
+# USER and PASS are limited to a safe character set because the value is
+# written inside a double-quoted assignment in the generated (root) script.
+# Anything else must be URL-encoded (e.g. "@" -> %40, ":" -> %3A).
+readonly PROXY_EXAMPLE="socks5://user:pass@host:2030"
+
+# Global curl arguments for the proxy (filled by set_proxy_args).
+PROXY_ARGS=()
+
+# Returns 0 if $1 is a valid socks5://USER:PASS@HOST:PORT string.
+validate_socks5_proxy() {
+  local p="${1:-}"
+  local re='^socks5://([A-Za-z0-9._~%+=!*-]+):([A-Za-z0-9._~%+=!*-]+)@([A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?):([0-9]{1,5})$'
+  [[ "$p" =~ $re ]] || return 1
+  local port="${BASH_REMATCH[5]}"
+  (( 10#$port >= 1 && 10#$port <= 65535 ))
+}
+
+# socks5://user:pass@host:port  ->  socks5://user:****@host:port
+mask_proxy() {
+  printf '%s' "${1:-}" | sed -E 's#^(socks5://[^:]+):[^@]*@#\1:****@#'
+}
+
+# curl needs socks5h:// so that the *proxy* resolves api.telegram.org.
+# With plain socks5:// curl resolves DNS locally, which fails or returns
+# bogus answers on networks where Telegram is filtered.
+proxy_to_curl_url() {
+  printf '%s' "${1:-}" | sed -E 's#^socks5://#socks5h://#'
+}
+
+# Fill PROXY_ARGS for curl ("" => no proxy => empty array).
+set_proxy_args() {
+  PROXY_ARGS=()
+  if [[ -n "${1:-}" ]]; then
+    PROXY_ARGS=(--connect-timeout 15 --max-time 30 --proxy "$(proxy_to_curl_url "$1")")
+  fi
+}
+
+# Send a test message. Prints the HTTP status code ("000" = network failure).
+# Never aborts the caller, even with `set -e`, when curl cannot connect.
+telegram_test_message() {
+  local token="$1" chat="$2" topic="${3:-}" proxy="${4:-}"
+  local response
+  local args=(
+    -s -o /dev/null -w "%{http_code}" -X POST
+    "https://api.telegram.org/bot${token}/sendMessage"
+    -d chat_id="$chat"
+    -d text="Hi from ${PROJECT_NAME} (test message)."
+  )
+  if [[ -n "$topic" ]]; then
+    args+=(-d message_thread_id="$topic")
+  fi
+  set_proxy_args "$proxy"
+  response=$(curl "${args[@]}" ${PROXY_ARGS[@]+"${PROXY_ARGS[@]}"}) || response="000"
+  printf '%s' "$response"
+}
+
+# Check that api.telegram.org is reachable through the proxy.
+# Prints the HTTP status code ("000" = unreachable).
+test_telegram_via_proxy() {
+  local proxy="$1" response
+  set_proxy_args "$proxy"
+  response=$(curl -s -o /dev/null -w "%{http_code}" \
+    ${PROXY_ARGS[@]+"${PROXY_ARGS[@]}"} "https://api.telegram.org/") || response="000"
+  printf '%s' "$response"
+}
+
+# Interactive prompt. Sets the global TELEGRAM_PROXY ("" = connect directly).
+ask_telegram_proxy() {
+  TELEGRAM_PROXY=""
+
+  echo ""
+  menu_header
+  ui_row "  ${C[c]}TELEGRAM PROXY (SOCKS5)${C[reset]}"
+  ui_separator
+  ui_row "  ${C[w]}Is Telegram blocked on this server?${C[reset]}"
+  ui_row "  ${C[d]}Route it through a SOCKS5 proxy.${C[reset]}"
+  ui_separator
+  item 1 "No, connect directly"
+  item 2 "Yes, use a SOCKS5 proxy"
+  menu_footer
+  echo ""
+
+  local pchoice
+  while true; do
+    input "Use a proxy for Telegram? (1-2): " pchoice
+    case "$pchoice" in
+      1) success "Connecting to Telegram directly."; return 0 ;;
+      2) break ;;
+      *) wrong "Invalid option." ;;
+    esac
+  done
+
+  echo ""
+  print "Format:  socks5://USERNAME:PASSWORD@HOST:PORT"
+  print "Example: ${PROXY_EXAMPLE}"
+  print "Special chars in user/pass must be URL-encoded."
+  echo ""
+
+  local p code act
+  while true; do
+    input "Enter SOCKS5 proxy: " p
+
+    if [[ -z "$p" ]]; then
+      wrong "Proxy cannot be empty."
+      continue
+    fi
+    if ! validate_socks5_proxy "$p"; then
+      wrong "Invalid format. It must be socks5://user:pass@host:port"
+      continue
+    fi
+
+    log "Testing Telegram connection through the proxy..."
+    code=$(test_telegram_via_proxy "$p")
+
+    if [[ "$code" != "000" ]]; then
+      TELEGRAM_PROXY="$p"
+      success "Proxy works: $(mask_proxy "$p")"
+      return 0
+    fi
+
+    wrong "Could not reach Telegram through this proxy."
+    input "[r] re-enter   [s] save anyway   [n] no proxy: " act
+    case "${act,,}" in
+      s)
+        TELEGRAM_PROXY="$p"
+        warn "Proxy saved without a successful test: $(mask_proxy "$p")"
+        return 0
+        ;;
+      n)
+        success "Proxy disabled. Connecting directly."
+        return 0
+        ;;
+      *) ;;   # anything else: ask again
+    esac
+  done
+}
+
+#######################################
 #             Main menu               #
 #######################################
 
@@ -456,7 +599,7 @@ _profile_editor() {
   while true; do
     # Read current values for display
     local cur_remark cur_interval cur_tz cur_tg_token cur_tg_chat cur_tg_topic
-    local cur_dest cur_local_path cur_encrypt cur_enc_password
+    local cur_dest cur_local_path cur_encrypt cur_enc_password cur_proxy proxy_state
     cur_remark=$(_read_script_value "$script" "REMARK")
     cur_interval=$(_read_script_value "$script" "INTERVAL_MINUTES")
     cur_tz=$(_read_script_value "$script" "TIMEZONE")
@@ -466,6 +609,11 @@ _profile_editor() {
     cur_dest=$(_read_script_value "$script" "DESTINATION")
     cur_local_path=$(_read_script_value "$script" "LOCAL_DEST_PATH")
     cur_encrypt=$(_read_script_value "$script" "ENCRYPT_ENABLED")
+    cur_proxy=$(_read_script_value "$script" "TELEGRAM_PROXY")
+    proxy_state="off"
+    if [[ -n "$cur_proxy" ]]; then
+      proxy_state="on"
+    fi
 
     clear
     menu_header
@@ -480,9 +628,10 @@ _profile_editor() {
     ui_row "  ${C[g]}4${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Telegram Settings${C[reset]}      "
     ui_row "  ${C[g]}5${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Destination${C[reset]}  ${C[d]}[ ${C[c]}${cur_dest:-telegram}${C[d]} ]${C[reset]}  "
     ui_row "  ${C[g]}6${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Encryption${C[reset]}   ${C[d]}[ ${C[c]}${cur_encrypt:-no}${C[d]} ]${C[reset]}  "
+    ui_row "  ${C[g]}7${C[reset]} ${C[d]}│${C[reset]} ${C[w]}Change Telegram Proxy${C[reset]}  ${C[d]}[ ${C[c]}${proxy_state}${C[d]} ]${C[reset]}  "
     echo -e "${C[d]}${BOX_V}${C[reset]}${C[d]}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_B}${C[reset]}"
-    ui_row "  ${C[g]}7${C[reset]} ${C[d]}│${C[reset]} ${C[g]}Save${C[reset]}                                   "
-    ui_row "  ${C[r]}8${C[reset]} ${C[d]}│${C[reset]} ${C[r]}Cancel${C[reset]}                                 "
+    ui_row "  ${C[g]}8${C[reset]} ${C[d]}│${C[reset]} ${C[g]}Save${C[reset]}                                   "
+    ui_row "  ${C[r]}9${C[reset]} ${C[d]}│${C[reset]} ${C[r]}Cancel${C[reset]}                                 "
     menu_footer
     echo ""
     input "Choose an option:" opt
@@ -507,11 +656,14 @@ _profile_editor() {
         _edit_encryption "$script"
         ;;
       7)
+        _edit_proxy "$script"
+        ;;
+      8)
         success "Profile saved."
         sleep 1
         return
         ;;
-      8)
+      9)
         warn "Edit cancelled."
         sleep 1
         return
@@ -653,23 +805,16 @@ _edit_telegram() {
     fi
   done
 
-  # Validate
+  # Validate (through the profile's proxy, if it has one)
   log "Validating Telegram credentials..."
-  local response
-  if [[ -n "$new_topic" ]]; then
-    response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-      "https://api.telegram.org/bot${new_token}/sendMessage" \
-      -d chat_id="$new_chat" \
-      -d message_thread_id="$new_topic" \
-      -d text="Hi from ${PROJECT_NAME} (test message).")
-  else
-    response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-      "https://api.telegram.org/bot${new_token}/sendMessage" \
-      -d chat_id="$new_chat" \
-      -d text="Hi from ${PROJECT_NAME} (test message).")
-  fi
+  local response cur_proxy
+  cur_proxy=$(_read_script_value "$script" "TELEGRAM_PROXY")
+  response=$(telegram_test_message "$new_token" "$new_chat" "$new_topic" "$cur_proxy")
 
   if [[ "$response" -ne 200 ]]; then
+    if [[ "$response" == "000" ]]; then
+      wrong "Telegram is unreachable. Check the network or the proxy."
+    fi
     wrong "Telegram validation failed (HTTP $response). Settings not saved."
     sleep 2
     return
@@ -679,6 +824,29 @@ _edit_telegram() {
   _set_script_value "$script" "TELEGRAM_CHAT_ID"   "$new_chat"
   _set_script_value "$script" "TELEGRAM_TOPIC_ID"  "$new_topic"
   success "Telegram settings updated."
+  sleep 1
+}
+
+_edit_proxy() {
+  local script="$1"
+
+  # Profiles generated by older versions have no proxy support in their
+  # sending code, so changing the value there would silently do nothing.
+  if ! grep -q '^TELEGRAM_PROXY=' "$script" 2>/dev/null; then
+    wrong "This profile was created by an older version"
+    wrong "without proxy support. Remove it and install again."
+    sleep 3
+    return
+  fi
+
+  ask_telegram_proxy
+  _set_script_value "$script" "TELEGRAM_PROXY" "$TELEGRAM_PROXY"
+
+  if [[ -n "$TELEGRAM_PROXY" ]]; then
+    success "Telegram proxy saved: $(mask_proxy "$TELEGRAM_PROXY")"
+  else
+    success "Telegram proxy disabled."
+  fi
   sleep 1
 }
 
@@ -978,6 +1146,7 @@ telegram_or_destination_progress() {
     TELEGRAM_BOT_TOKEN=""
     TELEGRAM_CHAT_ID=""
     TELEGRAM_TOPIC_ID=""
+    TELEGRAM_PROXY=""
     TIMEZONE="UTC"
     if command -v timedatectl >/dev/null 2>&1; then
       TIMEZONE=$(timedatectl show -p Timezone --value 2>/dev/null || echo "UTC")
@@ -1018,6 +1187,9 @@ telegram_progress() {
   ui_row "  ${C[d]}${BOX_V}${C[reset]}  ${C[w]}Bot token, Chat ID, Topic ID${C[reset]}          "
   menu_footer
   echo ""
+
+  # Ask for the proxy first so the credential check below goes through it
+  ask_telegram_proxy
 
   while true; do
     # Get bot token
@@ -1079,24 +1251,17 @@ telegram_progress() {
     TIMEZONE="$USER_TZ"
     success "Using timezone: $TIMEZONE"
 
-    # Validate bot token and chat ID
+    # Validate bot token and chat ID (through the proxy, if one was set)
     log "Checking Telegram bot..."
     local response
-    if [[ -n "$TOPIC_ID" ]]; then
-      response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-        "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
-        -d chat_id="$CHAT_ID" \
-        -d message_thread_id="$TOPIC_ID" \
-        -d text="Hi from ${PROJECT_NAME} (test message)." )
-    else
-      response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-        "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
-        -d chat_id="$CHAT_ID" \
-        -d text="Hi from ${PROJECT_NAME} (test message)." )
-    fi
+    response=$(telegram_test_message "$BOT_TOKEN" "$CHAT_ID" "$TOPIC_ID" "$TELEGRAM_PROXY")
 
     if [[ "$response" -ne 200 ]]; then
-      wrong "Invalid bot token, chat ID, topic ID, or Telegram API error! (HTTP $response)"
+      if [[ "$response" == "000" ]]; then
+        wrong "Could not connect to Telegram. Check the network or the proxy."
+      else
+        wrong "Invalid bot token, chat ID, topic ID, or Telegram API error! (HTTP $response)"
+      fi
     else
       success "Bot token and chat ID are valid."
       break
@@ -1204,6 +1369,7 @@ TIMEZONE="__TIMEZONE__"
 TELEGRAM_BOT_TOKEN="__TG_BOT__"
 TELEGRAM_CHAT_ID="__TG_CHAT__"
 TELEGRAM_TOPIC_ID="__TG_TOPIC__"
+TELEGRAM_PROXY="__TG_PROXY__"
 
 DESTINATION="__DESTINATION__"
 LOCAL_DEST_PATH="__LOCAL_DEST_PATH__"
@@ -1369,6 +1535,23 @@ send_to_telegram() {
     -o /tmp/tg_resp.json
     -w "%{http_code}"
     -F "chat_id=${TELEGRAM_CHAT_ID}"
+  )
+
+  if [ -n "${TELEGRAM_TOPIC_ID}" ]; then
+    curl_args+=( -F "message_thread_id=${TELEGRAM_TOPIC_ID}" )
+  fi
+
+  # Optional SOCKS5 proxy (for servers where Telegram is blocked).
+  # socks5h:// lets the proxy resolve api.telegram.org, so local DNS
+  # filtering cannot break the connection.
+  if [ -n "${TELEGRAM_PROXY}" ]; then
+    local proxy_url
+    proxy_url="$(printf '%s' "${TELEGRAM_PROXY}" | sed -E 's#^socks5://#socks5h://#')"
+    curl_args+=( --connect-timeout 30 --proxy "${proxy_url}" )
+    log "Using SOCKS5 proxy for Telegram."
+  fi
+
+  curl_args+=(
     -F "document=@${FILE}"
     --form-string "caption=${CAPTION}"
     -F "parse_mode=HTML"
@@ -1376,30 +1559,22 @@ send_to_telegram() {
     "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument"
   )
 
-  if [ -n "${TELEGRAM_TOPIC_ID}" ]; then
-    curl_args=(
-      -s
-      -o /tmp/tg_resp.json
-      -w "%{http_code}"
-      -F "chat_id=${TELEGRAM_CHAT_ID}"
-      -F "message_thread_id=${TELEGRAM_TOPIC_ID}"
-      -F "document=@${FILE}"
-      --form-string "caption=${CAPTION}"
-      -F "parse_mode=HTML"
-      --form-string "reply_markup=${reply_markup}"
-      "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument"
-    )
-  fi
+  rm -f /tmp/tg_resp.json 2>/dev/null || true
 
+  # If curl itself fails (proxy down, timeout...) report it instead of
+  # letting `set -e` kill the script silently.
   local response
-  response="$(curl "${curl_args[@]}")"
+  response="$(curl "${curl_args[@]}")" || response="000"
 
   if [[ "$response" -eq 200 ]]; then
     log "Backup part sent successfully: $FILE"
   else
     log "Telegram HTTP status: $response"
+    if [[ "$response" == "000" ]]; then
+      log "Could not connect to Telegram (check network / proxy)."
+    fi
     log "Telegram response body:"
-    cat /tmp/tg_resp.json
+    cat /tmp/tg_resp.json 2>/dev/null || true
     log "Failed to send ${REMARK} backup part: $FILE"
     exit 1
   fi
@@ -1462,6 +1637,7 @@ EOL
     -e "s|__TG_BOT__|$(sed_escape "${TELEGRAM_BOT_TOKEN}")|g" \
     -e "s|__TG_CHAT__|$(sed_escape "${TELEGRAM_CHAT_ID}")|g" \
     -e "s|__TG_TOPIC__|$(sed_escape "${TELEGRAM_TOPIC_ID}")|g" \
+    -e "s|__TG_PROXY__|$(sed_escape "${TELEGRAM_PROXY:-}")|g" \
     -e "s|__DESTINATION__|$(sed_escape "${DESTINATION}")|g" \
     -e "s|__LOCAL_DEST_PATH__|$(sed_escape "${LOCAL_DEST_PATH}")|g" \
     -e "s|__ENCRYPT_ENABLED__|$(sed_escape "${ENCRYPT_ENABLED}")|g" \
@@ -1477,6 +1653,10 @@ EOL
   # but crontab entries execute the path directly and need the +x bit.)
   chmod 700 "$BACKUP_PATH"
   success "Backup script created: $BACKUP_PATH (permissions locked to 700 — owner-only, still executable)"
+
+  if [[ -n "${TELEGRAM_PROXY:-}" ]]; then
+    success "Telegram proxy: $(mask_proxy "$TELEGRAM_PROXY")"
+  fi
 
   log "Running the backup script for the first time..."
 
@@ -1533,13 +1713,15 @@ Silent --install flags:
   --telegram-token TOKEN     Telegram bot token
   --telegram-chat-id ID      Telegram chat ID
   --telegram-topic-id ID     Telegram topic/thread ID (optional)
+  --telegram-proxy URL       SOCKS5 proxy used to reach Telegram (optional)
+                             Format: socks5://USER:PASS@HOST:PORT
   --encrypt        yes|no    Enable encryption
   --password       PASS      Encryption password (required if --encrypt yes)
 
 Silent --edit REMARK flags (all optional; only supplied fields are changed):
   --interval, --timezone, --destination, --local-path,
   --telegram-token, --telegram-chat-id, --telegram-topic-id,
-  --encrypt, --password
+  --telegram-proxy (use "none" to remove it), --encrypt, --password
 
 Examples:
   $(basename "$0") --silent --install \\
@@ -1550,6 +1732,8 @@ Examples:
       --encrypt no
 
   $(basename "$0") --silent --edit main --interval 30
+  $(basename "$0") --silent --edit main \\
+      --telegram-proxy socks5://user:pass@host:2030
   $(basename "$0") --silent --remove
   $(basename "$0") --silent --run
 EOF
@@ -1557,21 +1741,8 @@ EOF
 
 # Validate a Telegram connection silently (no interactive prompt)
 _silent_validate_telegram() {
-  local token="$1" chat="$2" topic="${3:-}"
-  local response
-  if [[ -n "$topic" ]]; then
-    response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-      "https://api.telegram.org/bot${token}/sendMessage" \
-      -d chat_id="$chat" \
-      -d message_thread_id="$topic" \
-      -d text="Hi from ${PROJECT_NAME} (test message).")
-  else
-    response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-      "https://api.telegram.org/bot${token}/sendMessage" \
-      -d chat_id="$chat" \
-      -d text="Hi from ${PROJECT_NAME} (test message).")
-  fi
-  echo "$response"
+  local token="$1" chat="$2" topic="${3:-}" proxy="${4:-}"
+  telegram_test_message "$token" "$chat" "$topic" "$proxy"
 }
 
 # Validate an IANA timezone string
@@ -1644,6 +1815,16 @@ silent_install() {
     fi
   fi
 
+  # --- Telegram proxy (only meaningful for Telegram delivery) ---
+  if [[ -n "${TELEGRAM_PROXY:-}" ]]; then
+    if [[ "${DESTINATION:-}" == "local" ]]; then
+      echo "[WARN] --telegram-proxy ignored: destination is local only." >&2
+      TELEGRAM_PROXY=""
+    elif ! validate_socks5_proxy "$TELEGRAM_PROXY"; then
+      echo "[ERROR] Invalid --telegram-proxy. Use: socks5://USER:PASS@HOST:PORT" >&2; err=1
+    fi
+  fi
+
   # --- Encryption ---
   case "${ENCRYPT_ENABLED:-no}" in
     yes|no) ;;
@@ -1669,9 +1850,9 @@ silent_install() {
   if [[ "${DESTINATION}" == "telegram" || "${DESTINATION}" == "both" ]]; then
     echo "[INFO] Validating Telegram credentials..."
     local tg_resp
-    tg_resp=$(_silent_validate_telegram "${TELEGRAM_BOT_TOKEN}" "${TELEGRAM_CHAT_ID}" "${TELEGRAM_TOPIC_ID:-}")
+    tg_resp=$(_silent_validate_telegram "${TELEGRAM_BOT_TOKEN}" "${TELEGRAM_CHAT_ID}" "${TELEGRAM_TOPIC_ID:-}" "${TELEGRAM_PROXY:-}")
     if [[ "$tg_resp" -ne 200 ]]; then
-      echo "[ERROR] Telegram validation failed (HTTP $tg_resp). Check token/chat-id/topic-id." >&2
+      echo "[ERROR] Telegram validation failed (HTTP $tg_resp). Check token/chat-id/topic-id/proxy." >&2
       exit 1
     fi
     echo "[INFO] Telegram credentials valid."
@@ -1786,8 +1967,27 @@ silent_edit() {
     changed=1
   fi
 
-  # Encryption
-  if [[ -n "${ENCRYPT_ENABLED:-}" ]]; then
+  # Telegram proxy ("none" removes it)
+  if [[ -n "${TELEGRAM_PROXY:-}" ]]; then
+    if ! grep -q '^TELEGRAM_PROXY=' "$script"; then
+      echo "[ERROR] Profile '${edit_remark}' was created by an older version without proxy support. Remove it and install again." >&2; exit 1
+    fi
+    if [[ "$TELEGRAM_PROXY" == "none" ]]; then
+      _set_script_value "$script" "TELEGRAM_PROXY" ""
+      echo "[INFO] Telegram proxy disabled."
+    else
+      if ! validate_socks5_proxy "$TELEGRAM_PROXY"; then
+        echo "[ERROR] Invalid --telegram-proxy. Use: socks5://USER:PASS@HOST:PORT" >&2; exit 1
+      fi
+      _set_script_value "$script" "TELEGRAM_PROXY" "$TELEGRAM_PROXY"
+      echo "[INFO] Telegram proxy updated."
+    fi
+    changed=1
+  fi
+
+  # Encryption (only when --encrypt was explicitly given; otherwise the
+  # default "no" would silently disable encryption on every edit)
+  if [[ "${ENCRYPT_SET:-0}" == "1" ]]; then
     case "$ENCRYPT_ENABLED" in
       yes|no) ;;
       *) echo "[ERROR] --encrypt must be yes or no." >&2; exit 1 ;;
@@ -1822,6 +2022,7 @@ parse_args() {
   SILENT_MODE=0
   CLI_ACTION=""
   CLI_EDIT_REMARK=""
+  ENCRYPT_SET=0
   REMARK="${REMARK:-}"
   INTERVAL_MINUTES="${INTERVAL_MINUTES:-}"
   TIMEZONE="${TIMEZONE:-}"
@@ -1830,6 +2031,7 @@ parse_args() {
   TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
   TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-}"
   TELEGRAM_TOPIC_ID="${TELEGRAM_TOPIC_ID:-}"
+  TELEGRAM_PROXY="${TELEGRAM_PROXY:-}"
   ENCRYPT_ENABLED="${ENCRYPT_ENABLED:-no}"
   ENCRYPT_PASSWORD="${ENCRYPT_PASSWORD:-}"
   ENCRYPT_TOOL=""
@@ -1889,8 +2091,11 @@ parse_args() {
       --telegram-topic-id)
         TELEGRAM_TOPIC_ID="${2:-}"; shift 2
         ;;
+      --telegram-proxy)
+        TELEGRAM_PROXY="${2:-}"; shift 2
+        ;;
       --encrypt)
-        ENCRYPT_ENABLED="${2:-no}"; shift 2
+        ENCRYPT_ENABLED="${2:-no}"; ENCRYPT_SET=1; shift 2
         ;;
       --password)
         ENCRYPT_PASSWORD="${2:-}"; shift 2
