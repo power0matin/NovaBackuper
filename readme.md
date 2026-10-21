@@ -2,7 +2,7 @@
   <img src="https://github.com/user-attachments/assets/16cc16e2-f1e5-4ae8-9b5f-bbea33fa39bd" alt="NovaBackuper Logo" />
 </div>
 
-# NovaBackuper
+<h1 align="center">NovaBackuper</h1>
 
 <!-- repo-badges:start -->
 <p align="center">
@@ -18,7 +18,6 @@
 It generates compressed, timestamped backups of your x-ui database and ships them straight to a **Telegram** chat or a **local folder** — fully automated, with cron integration, optional AES-256 encryption, and a full CLI for scripted deployments.
 
 🇮🇷 Persian version: [readme-fa.md](readme-fa.md)
-
 
 ## 🚀 Quick Install
 
@@ -247,3 +246,24 @@ Thank you for using it!
 > Huge thanks to **@ErfJabs** for the original idea and base implementation.
 
 [![Stargazers over time](https://starchart.cc/power0matin/NovaBackuper.svg?variant=adaptive)](https://starchart.cc/power0matin/NovaBackuper)
+
+<p align="center">
+  <b>If this helped you, consider giving it a star!</b><br>
+  <sub>Your support keeps the project alive and helps others find it.</sub>
+</p>
+
+<!-- Copy-paste in your Readme.md file -->
+<p align="center">
+  <a href="https://next.ossinsight.io/widgets/official/analyze-repo-stars-history?repo_id=1099729655" target="_blank" style="display: block" align="center">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://next.ossinsight.io/widgets/official/analyze-repo-stars-history/thumbnail.png?repo_id=1099729655&amp;image_size=auto&amp;color_scheme=dark" width="721" height="auto">
+      <img alt="Star History of power0matin/NovaBackuper" src="https://next.ossinsight.io/widgets/official/analyze-repo-stars-history/thumbnail.png?repo_id=1099729655&amp;image_size=auto&amp;color_scheme=light" width="721" height="auto">
+    </picture>
+  </a>
+</p>
+
+<!-- Made with [OSS Insight](https://ossinsight.io/) -->
+
+<p align="center">
+  Created by <a href="https://github.com/power0matin">power0matin</a>
+</p>
