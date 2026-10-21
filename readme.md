@@ -230,6 +230,10 @@ These are example timezone strings you can use when NovaBackuper asks for your t
 If NovaBackuper is useful to you, a **star (⭐)** on the repo is more than enough.
 Thank you for using it!
 
+> [!NOTE]
+> NovaBackuper started as a fork of [Backuper](https://github.com/erfjab/Backuper) and evolved into a focused variant for **x-ui + Telegram**.
+> Huge thanks to **@ErfJabs** for the original idea and base implementation.
+
 ## 📬 Contact
 
 **Matin Shahabadi (متین شاه‌آبادی / متین شاه آبادی)**
@@ -239,13 +243,6 @@ Thank you for using it!
 - GitHub: [power0matin](https://github.com/power0matin)
 - LinkedIn: [matin-shahabadi](https://www.linkedin.com/in/matin-shahabadi)
 
-🔹 Maintained by [@power0matin](https://github.com/power0matin)
-
-> [!NOTE]
-> NovaBackuper started as a fork of [Backuper](https://github.com/erfjab/Backuper) and evolved into a focused variant for **x-ui + Telegram**.
-> Huge thanks to **@ErfJabs** for the original idea and base implementation.
-
-[![Stargazers over time](https://starchart.cc/power0matin/NovaBackuper.svg?variant=adaptive)](https://starchart.cc/power0matin/NovaBackuper)
 
 <p align="center">
   <b>If this helped you, consider giving it a star!</b><br>
